@@ -1,7 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { describe, expect, it, vi } from 'vitest';
 import { FireflyError } from '../client.js';
-import { dateSchema, defineTool, parseId } from '../tools/_helpers.js';
+import { dateOrDateTimeSchema, dateSchema, defineTool, parseId } from '../tools/_helpers.js';
 
 function makeServer() {
   let capturedHandler: ((args: Record<string, unknown>) => Promise<unknown>) | null = null;
@@ -73,6 +73,29 @@ describe('dateSchema', () => {
 
   it('rejects natural-language dates', () => {
     expect(() => dateSchema.parse('Jan 15 2026')).toThrow('Date must be YYYY-MM-DD');
+  });
+});
+
+describe('dateOrDateTimeSchema', () => {
+  it('accepts YYYY-MM-DD for backward compatibility', () => {
+    expect(() => dateOrDateTimeSchema.parse('2026-01-15')).not.toThrow();
+  });
+
+  it('accepts RFC 3339 date-times with UTC or an explicit offset', () => {
+    expect(() => dateOrDateTimeSchema.parse('2026-07-25T12:30:00Z')).not.toThrow();
+    expect(() => dateOrDateTimeSchema.parse('2026-07-25T14:30:00+02:00')).not.toThrow();
+  });
+
+  it('rejects date-times without a timezone', () => {
+    expect(() => dateOrDateTimeSchema.parse('2026-07-25T14:30:00')).toThrow(
+      'Date must be YYYY-MM-DD or an RFC 3339 date-time with timezone',
+    );
+  });
+
+  it('rejects invalid date-times', () => {
+    expect(() => dateOrDateTimeSchema.parse('2026-02-30T12:30:00Z')).toThrow(
+      'Date must be YYYY-MM-DD or an RFC 3339 date-time with timezone',
+    );
   });
 });
 

@@ -99,7 +99,7 @@ describe('createTransaction', () => {
     mockClient.post = vi.fn().mockResolvedValueOnce(writeSingleFixture);
     await createTransaction(mockClient, {
       type: 'withdrawal',
-      date: '2024-01-15',
+      date: '2024-01-15T09:30:00Z',
       amount: '42.50',
       description: 'Groceries',
       source_id: '1',
@@ -110,7 +110,7 @@ describe('createTransaction', () => {
       transactions: [
         expect.objectContaining({
           type: 'withdrawal',
-          date: '2024-01-15',
+          date: '2024-01-15T09:30:00Z',
           amount: '42.50',
           description: 'Groceries',
           source_id: '1',
@@ -134,11 +134,14 @@ describe('createTransaction', () => {
 describe('updateTransaction', () => {
   it('puts to /transactions/:id with wrapped body', async () => {
     mockClient.put = vi.fn().mockResolvedValueOnce(writeSingleFixture);
-    await updateTransaction(mockClient, '5', { description: 'Updated' });
+    await updateTransaction(mockClient, '5', {
+      date: '2024-01-15T11:30:00+02:00',
+      description: 'Updated',
+    });
     expect(mockClient.put).toHaveBeenCalledWith('/transactions/5', {
       apply_rules: true,
       fire_webhooks: true,
-      transactions: [{ description: 'Updated' }],
+      transactions: [{ date: '2024-01-15T11:30:00+02:00', description: 'Updated' }],
     });
   });
 
@@ -187,7 +190,7 @@ describe('createSplitTransaction', () => {
     mockClient.post = vi.fn().mockResolvedValueOnce(writeSingleFixture);
     await createSplitTransaction(mockClient, {
       type: 'withdrawal',
-      date: '2026-05-01',
+      date: '2026-05-01T18:45:00-04:00',
       source_id: '1',
       splits: [
         { amount: '30.00', description: 'Groceries', category_name: 'Food' },
@@ -200,7 +203,7 @@ describe('createSplitTransaction', () => {
       transactions: [
         {
           type: 'withdrawal',
-          date: '2026-05-01',
+          date: '2026-05-01T18:45:00-04:00',
           source_id: '1',
           amount: '30.00',
           description: 'Groceries',
@@ -208,7 +211,7 @@ describe('createSplitTransaction', () => {
         },
         {
           type: 'withdrawal',
-          date: '2026-05-01',
+          date: '2026-05-01T18:45:00-04:00',
           source_id: '1',
           amount: '12.50',
           description: 'Cleaning supplies',
