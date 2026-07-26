@@ -464,7 +464,7 @@ expect(result).toEqual({ name: 'Checking', current_balance: '1000', id: '1' });
 
 - **`main`** — default branch, always releasable. Receives only: Dependabot security PRs (auto-merged), manual hotfix PRs, and promotion merges from `develop`. Never commit directly to `main`.
 - **`develop`** — integration branch. All feature PRs and routine dependency bumps target `develop`. The nightly npm/Docker channel builds from `develop`.
-- Promotion `develop` → `main` is a **merge-commit PR** (never squash). Feature PRs into `develop` are squash-merged as before.
+- **Every PR in this repo merges as a merge commit — never squash, never rebase.** That applies to feature PRs into `develop`, promotion PRs `develop` → `main`, back-merges, and automated Dependabot merges alike. Shared history is what keeps back-merges conflict-free; a squash rewrites the commits and makes `main` and `develop` diverge on content they actually share.
 - After every push to `main`, `backmerge.yml` opens (or reuses) an auto-merged `main` → `develop` PR so `develop` stays a superset of `main`. If it conflicts, the PR stays open for manual resolution. During active development this conflict is *routine*, not a malfunction: automated releases and feature PRs both edit the top of `CHANGELOG.md`. Resolve by keeping both sides — the released `## [X.Y.Z]` section and the remaining `[Unreleased]` entries.
 
 ### Automated security releases
@@ -472,8 +472,8 @@ expect(result).toEqual({ name: 'Checking', current_balance: '1000', id: '1' });
 Routine dependency-CVE fixes ship with no human in the loop:
 
 1. Dependabot opens a **grouped** security PR against `main` (`security-fixes` group in `dependabot.yml`).
-2. `auto-merge.yml` enables auto-merge (squash); branch protection's required checks gate the merge.
-3. On merge, `auto-release.yml` bumps the patch version, writes the `### Security` changelog section (via `scripts/release-changelog.sh`), commits `chore(release): X.Y.Z`, tags `vX.Y.Z`, and pushes both with the `RELEASE_TOKEN` PAT (a plain `GITHUB_TOKEN` push would not trigger downstream workflows).
+2. `auto-merge.yml` enables auto-merge (merge commit); branch protection's required checks gate the merge.
+3. On merge, `auto-release.yml`'s `gate` job asks the API which PR the merge commit closed and whether Dependabot opened it — with merge commits the head commit is `Merge pull request #N from …`, authored by whoever merged, so commit authorship can no longer identify these merges. The `release` job then bumps the patch version, writes the `### Security` changelog section from the **PR title** (via `scripts/release-changelog.sh`), commits `chore(release): X.Y.Z`, tags `vX.Y.Z`, and pushes both with the `RELEASE_TOKEN` PAT (a plain `GITHUB_TOKEN` push would not trigger downstream workflows).
 4. The tag push runs `publish.yml`'s normal release path (npm `latest`, Docker semver/`latest`, GitHub Release).
 
 Manual (non-Dependabot) hotfixes: PR to `main`, merge, then cut the release manually per "Releasing a New Version" below — `auto-release.yml` only fires on Dependabot merges.

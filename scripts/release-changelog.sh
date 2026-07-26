@@ -3,8 +3,8 @@
 # the link references at the bottom of the file.
 #
 # Usage: release-changelog.sh <new-version> <summary>
-#   <summary> may be multi-line (a squash-merge commit message); only its
-#   first line becomes the changelog bullet.
+#   <summary> may be multi-line (the merged PR's title); only its first line
+#   becomes the changelog bullet.
 #
 # Entries already sitting under [Unreleased] intentionally fall inside the
 # new section: they are shipping in this release, so that is where they

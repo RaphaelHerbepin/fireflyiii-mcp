@@ -30,8 +30,10 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       # alert-state is non-empty only for PRs that fix a security advisory.
-      - name: Enable auto-merge (squash)
+      # Merge commit, never squash: this repo keeps merge commits everywhere
+      # so branch histories stay shared (see AGENTS.md, "Branching Model").
+      - name: Enable auto-merge (merge commit)
         if: steps.meta.outputs.alert-state != ''
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-        run: gh pr merge --auto --squash "${{ github.event.pull_request.html_url }}"
+        run: gh pr merge --auto --merge "${{ github.event.pull_request.html_url }}"

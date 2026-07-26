@@ -2,7 +2,7 @@ name: Auto-release security fixes
 
 # Fully automated patch releases for Dependabot security merges on main.
 # Chain: dependabot security PR -> auto-merge.yml enables auto-merge ->
-# squash merge lands here -> patch bump + changelog + tag -> the tag push
+# merge commit lands here -> patch bump + changelog + tag -> the tag push
 # (made with RELEASE_TOKEN, so it is NOT inert like GITHUB_TOKEN pushes)
 # triggers publish.yml's normal release path.
 
@@ -25,16 +25,68 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  release:
-    # Only Dependabot squash-merges qualify: on main those are security fixes
-    # by construction (version updates target develop). Promotion merges from
-    # develop are authored by the maintainer and our own release commits
-    # start with chore(release): — both excluded.
+  # Decides whether this push is a Dependabot security merge, and supplies the
+  # changelog bullet. Split out so the release job's steps stay unconditional.
+  gate:
+    # Cheap prefilter only. Merges are merge commits, so the head commit is
+    # "Merge pull request #N from daften/dependabot/..." — authored by whoever
+    # merged (the RELEASE_TOKEN owner), not by Dependabot. Authorship can no
+    # longer identify these merges, so the authoritative check is the API
+    # lookup below; this expression only avoids spinning up a runner for
+    # promotion merges and our own chore(release): commits.
     if: >
       github.event_name == 'workflow_dispatch' ||
-      (github.event.head_commit.author.username == 'dependabot[bot]' &&
-       startsWith(github.event.head_commit.message, 'chore(deps') &&
-       !startsWith(github.event.head_commit.message, 'chore(release):'))
+      contains(github.event.head_commit.message, '/dependabot/')
+    runs-on: ubuntu-latest
+    permissions: {}
+    outputs:
+      release: ${{ steps.pr.outputs.release }}
+      # base64 so an attacker-influenceable PR title cannot inject extra job
+      # outputs (a crafted title could otherwise close the output heredoc),
+      # and so multi-line titles survive as a single output value.
+      summary_b64: ${{ steps.pr.outputs.summary_b64 }}
+    steps:
+      - name: Resolve the merged pull request
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            echo "release=true" >> "$GITHUB_OUTPUT"
+            printf 'summary_b64=%s\n' \
+              "$(printf '%s' 'Manually triggered security release (workflow_dispatch)' | base64 -w0)" \
+              >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Ask the API which PR this merge commit closed and who opened it.
+          # PR content cannot forge that, and on main a Dependabot PR is a
+          # security fix by construction (version updates target develop).
+          PR=$(gh api "repos/${REPO}/commits/${SHA}/pulls" \
+                 --jq "[.[] | select(.merge_commit_sha == \"${SHA}\")][0] // empty")
+          if [ -z "$PR" ]; then
+            echo "No pull request was merged at ${SHA}; nothing to release."
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          AUTHOR=$(printf '%s' "$PR" | jq -r '.user.login')
+          if [ "$AUTHOR" != "dependabot[bot]" ]; then
+            echo "PR was opened by ${AUTHOR}, not Dependabot; nothing to release."
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # The PR title, not the merge commit subject: the subject is now
+          # "Merge pull request #N from ..." and would make a useless bullet.
+          TITLE=$(printf '%s' "$PR" | jq -r '.title')
+          echo "Releasing for PR: ${TITLE}"
+          printf 'summary_b64=%s\n' "$(printf '%s' "$TITLE" | base64 -w0)" >> "$GITHUB_OUTPUT"
+          echo "release=true" >> "$GITHUB_OUTPUT"
+
+  release:
+    needs: gate
+    if: needs.gate.outputs.release == 'true'
     runs-on: ubuntu-latest
     permissions: {}
     steps:
@@ -58,16 +110,18 @@ jobs:
 
       - name: Write changelog entry
         env:
-          # env indirection, not inline ${{ }} interpolation: the commit
-          # message is attacker-influenceable text and must never be
-          # spliced into shell source.
-          HEAD_MSG: ${{ github.event.head_commit.message || 'Manually triggered security release (workflow_dispatch)' }}
-        run: bash scripts/release-changelog.sh "${{ steps.bump.outputs.version }}" "$HEAD_MSG"
+          # env indirection, not inline ${{ }} interpolation: the summary is
+          # attacker-influenceable text and must never be spliced into shell
+          # source. It stays base64 until decoded into a shell variable here.
+          SUMMARY_B64: ${{ needs.gate.outputs.summary_b64 }}
+          VERSION: ${{ steps.bump.outputs.version }}
+        run: bash scripts/release-changelog.sh "$VERSION" "$(printf '%s' "$SUMMARY_B64" | base64 -d)"
 
       - name: Commit, tag, push (skipped in dry-run)
         if: github.event_name == 'push' || inputs.dry-run == false
+        env:
+          VERSION: ${{ steps.bump.outputs.version }}
         run: |
-          VERSION="${{ steps.bump.outputs.version }}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add package.json package-lock.json CHANGELOG.md
