@@ -42,4 +42,9 @@ jobs:
           else
             echo "Reusing open back-merge PR #${NUMBER}"
           fi
-          gh pr merge --auto --merge --repo "$REPO" "$NUMBER"
+          # Plain merge, not --auto: develop has no required status checks, and
+          # GitHub refuses to enable auto-merge on a PR with nothing left to
+          # wait for ("Pull request is in clean status"). Whether that fires is
+          # a race against the non-required checks still running, so --auto
+          # here fails intermittently. Nothing gates develop, so merge outright.
+          gh pr merge --merge --repo "$REPO" "$NUMBER"

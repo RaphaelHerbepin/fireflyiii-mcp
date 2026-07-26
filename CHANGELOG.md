@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `MCP_ALLOWED_REDIRECT_PREFIXES` is now documented in the environment variable reference and `.env.example`.
 
 ### Changed
-- All pull requests now merge as merge commits — squash merging is no longer used anywhere, including Dependabot security auto-merges. Since the merge commit is authored by whoever merged rather than by Dependabot, `auto-release.yml` now recognises these merges by their `daften/dependabot/…` branch prefix and takes the changelog bullet from the merged PR's title.
+- All pull requests now merge as merge commits — squash merging is no longer used anywhere, including Dependabot security auto-merges. Since the merge commit is authored by whoever merged rather than by Dependabot, `auto-release.yml` now recognises these merges by their `daften/dependabot/…` branch prefix and takes the changelog bullet from the merged PR's title. Automated `main` → `develop` back-merge PRs are merged directly rather than through auto-merge, which GitHub refuses on a branch that has no required status checks to wait for.
 - Split development onto a `develop` integration branch: feature PRs and routine dependency updates target `develop` (which feeds the nightly channel), while `main` stays always-releasable. Dependabot security fixes on `main` now auto-merge and ship as automated patch releases; the PR dependency audit is now relative to the base branch, with the strict audit moved to the nightly workflow.
 
 ### Fixed
