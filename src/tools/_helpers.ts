@@ -70,6 +70,13 @@ export function defineContentTool(
 
 export const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD');
 
+const dateTimeSchema = z.iso.datetime({ offset: true });
+export const dateOrDateTimeSchema = z
+  .string()
+  .refine((value) => dateSchema.safeParse(value).success || dateTimeSchema.safeParse(value).success, {
+    message: 'Date must be YYYY-MM-DD or an RFC 3339 date-time with timezone',
+  });
+
 /**
  * Extracts a leading numeric ID from an autocomplete label such as `"42 (Checking - asset)"`.
  *

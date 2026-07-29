@@ -11,7 +11,7 @@ import {
 } from '../transform.js';
 import type { QueryParams } from '../types.js';
 import { DELETE_ANNOTATIONS, READ_ANNOTATIONS, UPDATE_ANNOTATIONS, WRITE_ANNOTATIONS } from './_annotations.js';
-import { dateSchema, defineTool } from './_helpers.js';
+import { dateOrDateTimeSchema, dateSchema, defineTool } from './_helpers.js';
 
 export async function fetchTransactions(
   client: FireflyClient,
@@ -237,7 +237,7 @@ export function registerTransactionTools(server: McpServer, client: FireflyClien
         'Create a new transaction in Firefly III. Use get_accounts to find source and destination account IDs.',
       inputSchema: {
         type: z.enum(['withdrawal', 'deposit', 'transfer']).describe('Transaction type'),
-        date: dateSchema.describe('Transaction date (YYYY-MM-DD)'),
+        date: dateOrDateTimeSchema.describe('Transaction date (YYYY-MM-DD or RFC 3339 date-time with timezone)'),
         amount: z.string().describe('Amount as a positive number string, e.g. "42.50"'),
         description: z.string().describe('Short description of the transaction'),
         source_id: z.string().optional().describe('Source account ID (required for withdrawals and transfers)'),
@@ -263,7 +263,9 @@ export function registerTransactionTools(server: McpServer, client: FireflyClien
       inputSchema: {
         id: z.string().describe('Transaction ID — use get_transactions to find valid IDs'),
         type: z.enum(['withdrawal', 'deposit', 'transfer']).optional().describe('Transaction type'),
-        date: dateSchema.optional().describe('Transaction date (YYYY-MM-DD)'),
+        date: dateOrDateTimeSchema
+          .optional()
+          .describe('Transaction date (YYYY-MM-DD or RFC 3339 date-time with timezone)'),
         amount: z.string().optional().describe('Amount as a positive number string'),
         description: z.string().optional().describe('Short description'),
         source_id: z.string().optional().describe('Source account ID'),
@@ -325,7 +327,9 @@ export function registerTransactionTools(server: McpServer, client: FireflyClien
         'Create a split transaction in Firefly III — one receipt divided across multiple categories, budgets, or descriptions. All splits share the same type, date, and accounts. Use get_accounts to find source and destination account IDs.',
       inputSchema: {
         type: z.enum(['withdrawal', 'deposit', 'transfer']).describe('Transaction type (shared across all splits)'),
-        date: dateSchema.describe('Transaction date (YYYY-MM-DD, shared across all splits)'),
+        date: dateOrDateTimeSchema.describe(
+          'Transaction date (YYYY-MM-DD or RFC 3339 date-time with timezone, shared across all splits)',
+        ),
         source_id: z.string().optional().describe('Source account ID (required for withdrawals and transfers)'),
         destination_id: z.string().optional().describe('Destination account ID (required for deposits and transfers)'),
         currency_code: z.string().optional().describe('Currency code (e.g. EUR, USD). Defaults to account currency.'),
