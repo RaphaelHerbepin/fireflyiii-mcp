@@ -9,10 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - RFC 9728 protected resource metadata at `/.well-known/oauth-protected-resource`, and a `resource_metadata` pointer on the `401` challenge, so MCP clients can discover the authorization server without a legacy fallback probe.
+- Transaction writes now accept a full date-time, not only a date. `create_transaction`, `update_transaction`, and `create_split_transaction` take either `YYYY-MM-DD` or an RFC 3339 date-time carrying an explicit timezone offset (e.g. `2026-08-02T14:30:00+02:00`), so the time of day survives into Firefly III instead of being dropped. Date-only values behave exactly as before. _Contributed by [@Itsakaseru](https://github.com/Itsakaseru) in [#61](https://github.com/daften/fireflyiii-mcp/pull/61)._
 - Claude Desktop setup guide covering stdio, custom connectors, and the `mcp-remote` bridge.
 - `MCP_ALLOWED_REDIRECT_PREFIXES` is now documented in the environment variable reference and `.env.example`.
 
 ### Changed
+- Bumped the runtime `@modelcontextprotocol/sdk` dependency from 1.29.0 to 1.30.0.
 - All pull requests now merge as merge commits — squash merging is no longer used anywhere, including Dependabot security auto-merges. Since the merge commit is authored by whoever merged rather than by Dependabot, `auto-release.yml` now recognises these merges by their `daften/dependabot/…` branch prefix and takes the changelog bullet from the merged PR's title. Automated `main` → `develop` back-merge PRs are merged directly rather than through auto-merge, which GitHub refuses on a branch that has no required status checks to wait for.
 - Split development onto a `develop` integration branch: feature PRs and routine dependency updates target `develop` (which feeds the nightly channel), while `main` stays always-releasable. Dependabot security fixes on `main` now auto-merge and ship as automated patch releases; the PR dependency audit is now relative to the base branch, with the strict audit moved to the nightly workflow.
 
