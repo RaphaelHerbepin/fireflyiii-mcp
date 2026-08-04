@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-08-04
+
+### Security
+
+- chore(deps): Bump ip-address from 10.2.0 to 10.4.0 in the security-fixes group across 1 directory (automated security release)
+
 ### Fixed
 - `auto-merge.yml` never actually enabled auto-merge on Dependabot security PRs: the `dependabot/fetch-metadata` step omitted `alert-lookup: true`, so `alert-state` was always empty and the merge step's guard condition was never true. Added `alert-lookup: true` to populate it.
 
@@ -132,7 +138,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - npm publish provenance via GitHub OIDC.
 - GitHub Release auto-created from the tag annotation on each `v*` tag push.
 
-[Unreleased]: https://github.com/daften/fireflyiii-mcp/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/daften/fireflyiii-mcp/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/daften/fireflyiii-mcp/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/daften/fireflyiii-mcp/compare/v0.3.4...v0.4.0
 [0.3.4]: https://github.com/daften/fireflyiii-mcp/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/daften/fireflyiii-mcp/compare/v0.3.2...v0.3.3
