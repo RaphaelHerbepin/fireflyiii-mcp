@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- `auto-merge.yml` never actually enabled auto-merge on Dependabot security PRs: the `dependabot/fetch-metadata` step omitted `alert-lookup: true`, so `alert-state` was always empty and the merge step's guard condition was never true. Added `alert-lookup: true` to populate it.
+
 ## [0.4.0] - 2026-08-02
 
 ### Added
