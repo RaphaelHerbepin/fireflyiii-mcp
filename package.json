@@ -58,7 +58,7 @@
   "overrides": {
     "@hono/node-server": "^2.0.5",
     "esbuild": "^0.28.1",
-    "hono": "^4.12.31"
+    "hono": "^4.13.0"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.6",
