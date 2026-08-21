@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { FireflyClient } from '../client.js';
+import { clearCompletionCache } from '../tools/_completions.js';
 import {
   clearBudgetsCache,
   createBudget,
@@ -266,22 +267,26 @@ describe('budget-transactions prompt', () => {
 describe('budgets autocomplete completions', () => {
   beforeEach(() => {
     clearBudgetsCache();
+    clearCompletionCache();
   });
 
-  it('fetches budgets with limit 1000 and filters suggestions case-insensitively', async () => {
+  // Returns the registered completion handler for the budget-transactions prompt argument.
+  function getBudgetsComplete(client: FireflyClient): (value: string) => Promise<string[]> {
     const { server, promptConfigs } = createMockServer();
-    const client = { get: vi.fn(), cacheKey: () => 'test-key' } as unknown as FireflyClient;
     registerBudgetTools(server, client);
-
     const prompt = promptConfigs.get('budget-transactions');
-    const budgetField = (prompt as any).argsSchema?.budget;
-    const complete = (budgetField as any)[Symbol.for('mcp.completable')].complete as (v: string) => Promise<string[]>;
+    const field = (prompt as any).argsSchema?.budget;
+    return (field as any)[Symbol.for('mcp.completable')].complete;
+  }
 
-    vi.mocked(client.get).mockResolvedValueOnce(listFixture);
+  it('queries the autocomplete endpoint instead of filtering a full listing', async () => {
+    const client = { get: vi.fn(), cacheKey: () => 'test-key' } as unknown as FireflyClient;
+    const complete = getBudgetsComplete(client);
 
-    const results = await complete('groc');
-    expect(client.get).toHaveBeenCalledTimes(1);
-    expect(client.get).toHaveBeenCalledWith('/budgets', { limit: 1000 });
+    vi.mocked(client.get).mockResolvedValueOnce([{ id: '3', name: 'Groceries' }]);
+
+    const results = await complete('groceries');
+    expect(client.get).toHaveBeenCalledWith('/autocomplete/budgets', { query: 'groceries', limit: 100 });
     expect(results).toEqual(['3 (Groceries)']);
   });
 });

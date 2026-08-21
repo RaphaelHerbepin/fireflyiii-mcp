@@ -13,12 +13,14 @@ import { registerPiggyBankTools } from './piggy-banks.js';
 import { registerRecurringTools } from './recurring.js';
 import { registerReportTools } from './reports.js';
 import { registerRuleTools } from './rules.js';
+import { registerSearchTools } from './search.js';
 import { registerTransactionLinkTools } from './transaction-links.js';
 import { registerTransactionTools } from './transactions.js';
 
 export const TOOL_GROUPS = [
   'accounts',
   'aggregates',
+  'search',
   'transactions',
   'budgets',
   'categories',
@@ -37,11 +39,11 @@ export const TOOL_GROUPS = [
 export type ToolGroup = (typeof TOOL_GROUPS)[number];
 
 export const PRESETS: Record<string, ToolGroup[]> = {
-  minimal: ['accounts', 'transactions'],
-  default: ['accounts', 'transactions', 'budgets', 'categories', 'bills', 'aggregates'],
-  budgeting: ['accounts', 'transactions', 'budgets', 'categories', 'bills', 'piggy-banks', 'aggregates'],
-  insights: ['accounts', 'transactions', 'categories', 'reports', 'aggregates'],
-  automation: ['accounts', 'transactions', 'rules', 'recurring'],
+  minimal: ['search', 'accounts', 'transactions'],
+  default: ['search', 'accounts', 'transactions', 'budgets', 'categories', 'bills', 'aggregates'],
+  budgeting: ['search', 'accounts', 'transactions', 'budgets', 'categories', 'bills', 'piggy-banks', 'aggregates'],
+  insights: ['search', 'accounts', 'transactions', 'categories', 'reports', 'aggregates'],
+  automation: ['search', 'accounts', 'transactions', 'rules', 'recurring'],
   full: [...TOOL_GROUPS],
 };
 
@@ -137,6 +139,7 @@ export function registerAllTools(server: McpServer, client: FireflyClient, optio
   const s = readOnly ? makeReadOnlyProxy(server) : server;
 
   if (activeGroups.has('accounts')) registerAccountTools(s, client);
+  if (activeGroups.has('search')) registerSearchTools(s, client);
   if (activeGroups.has('aggregates')) registerAggregateTools(s, client);
   if (activeGroups.has('transactions')) registerTransactionTools(s, client);
   if (activeGroups.has('budgets')) registerBudgetTools(s, client);

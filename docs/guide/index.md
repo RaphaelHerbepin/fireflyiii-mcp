@@ -34,4 +34,4 @@ Want to test unreleased changes from `main`? Install a [nightly build](./nightly
 
 The server exposes Firefly III's REST API as MCP tools. Your AI assistant calls these tools automatically when you ask finance-related questions. You never write API calls manually.
 
-With 146 tools across 15 groups, you can optionally load only a subset to save context window space — see [Tool filtering](/reference/filtering).
+With 147 tools across 16 groups, you can optionally load only a subset to save context window space — see [Tool filtering](/reference/filtering).

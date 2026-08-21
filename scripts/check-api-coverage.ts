@@ -17,6 +17,7 @@ import { fileURLToPath } from 'node:url';
 import { COLLECT_SPLITS_ROUTES } from '../src/tools/aggregates.js';
 import { EXPORT_TOOLS } from '../src/tools/exports.js';
 import { CHART_ENDPOINTS, INSIGHT_GROUPED_TOOLS, INSIGHT_NO_X_TOOLS } from '../src/tools/reports.js';
+import { AUTOCOMPLETE_ENTITIES } from '../src/tools/search.js';
 import { parseSpecOperationsChecked, type SpecOperation, toClientRoute } from './lib/parse-spec.js';
 import { scanFiles } from './lib/scan-routes.js';
 
@@ -57,6 +58,7 @@ function tableDrivenRoutes(): string[] {
     ...INSIGHT_NO_X_TOOLS.map((t) => `get ${t.endpoint}`),
     ...EXPORT_TOOLS.map((t) => `get /data/export/${t.entity}`),
     ...COLLECT_SPLITS_ROUTES.map((route) => `get ${route}`),
+    ...Object.values(AUTOCOMPLETE_ENTITIES).map((e) => `get ${e.path}`),
   ];
 }
 

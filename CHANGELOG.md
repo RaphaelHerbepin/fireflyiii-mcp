@@ -57,6 +57,10 @@ retargeted, four removed:
 
 ### Added
 
+- **`search_entities`**, one tool over Firefly III's seventeen `/autocomplete/*` endpoints. Resolving
+  "Coopérative U" to an account ID costs 602 characters instead of listing every account. Exposing
+  seventeen separate tools would have spent seventeen tool definitions in every `tools/list` response
+  to answer a question nobody asks directly.
 - Four budget tools that were missing: `get_budget`, `get_all_budget_limits`, `get_budget_limit` and
   `get_budget_limit_transactions`. The last one answers "what consumed this month's budget" rather
   than "everything ever charged to this budget", which is the question a monthly review asks.
@@ -151,6 +155,12 @@ retargeted, four removed:
 
 ### Changed
 
+- Argument autocomplete for accounts, budgets and categories now queries Firefly's autocomplete
+  endpoints instead of fetching up to 1 000 records per keystroke and filtering them in memory. That
+  is a much smaller request, it stops truncating on instances with more than a thousand accounts, and
+  matching is Firefly's own — so searching an account by IBAN or account number now works, where the
+  local filter would have discarded the hit because neither appears in the visible label. A 404 falls
+  back to the old listing path, so instances predating these endpoints keep working.
 - `src/tests/tool-filter.test.ts` no longer asserts absolute tool counts. Those live in
   `check-tool-counts.sh`, which derives them; asserting them in tests too meant every new tool broke
   six unrelated assertions, and the habit became updating the number rather than checking it. The

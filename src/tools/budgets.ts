@@ -1,4 +1,3 @@
-import { completable } from '@modelcontextprotocol/sdk/server/completable.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import type { FireflyClient } from '../client.js';
@@ -12,6 +11,7 @@ import {
 } from '../transform.js';
 import type { QueryParams } from '../types.js';
 import { DELETE_ANNOTATIONS, READ_ANNOTATIONS, UPDATE_ANNOTATIONS, WRITE_ANNOTATIONS } from './_annotations.js';
+import { withEntityCompletion } from './_completions.js';
 import {
   AUTOCOMPLETE_FETCH_LIMIT,
   AUTOCOMPLETE_MAX_SUGGESTIONS,
@@ -232,24 +232,14 @@ export function registerBudgetTools(server: McpServer, client: FireflyClient): v
     ({ page, limit }) => fetchBudgets(client, { page: page as number | undefined, limit: limit as number | undefined }),
   );
 
-  const budgetIdSchema = completable(
+  const budgetIdSchema = withEntityCompletion(
     z.string().describe('Budget ID — use get_budgets to find valid IDs'),
-    async (value) => {
-      debugLog(`[Autocomplete] Budget search input: "${value}"`);
-      try {
-        const budgets = await budgetsCache.get(client.cacheKey(), () =>
-          fetchBudgets(client, { limit: AUTOCOMPLETE_FETCH_LIMIT }),
-        );
-        const suggestions = budgets.data
-          .map((b) => `${b.id} (${b.name ?? ''})`)
-          .filter((label) => label.toLowerCase().includes(value.toLowerCase()))
-          .slice(0, AUTOCOMPLETE_MAX_SUGGESTIONS);
-        debugLog(`[Autocomplete] Budget suggestions found: ${suggestions.length}`);
-        return suggestions;
-      } catch (err) {
-        debugLog('[Autocomplete Error - Budget]:', err);
-        return [];
-      }
+    client,
+    'budgets',
+    {
+      // Older Firefly versions have no /autocomplete/* endpoints; keep the listing path as a fallback.
+      list: () => budgetsCache.get(client.cacheKey(), () => fetchBudgets(client, { limit: AUTOCOMPLETE_FETCH_LIMIT })),
+      label: (item: Record<string, unknown>) => String(item.name ?? ''),
     },
   );
 

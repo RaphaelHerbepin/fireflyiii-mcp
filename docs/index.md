@@ -17,8 +17,8 @@ hero:
 
 features:
   - icon: 🛠️
-    title: 146 tools
-    details: 15 groups covering accounts, transactions, budgets, categories, bills, piggy banks, reports, rules, recurring transactions, attachments, currencies, exports, object groups, and transaction links.
+    title: 147 tools
+    details: 16 groups covering accounts, transactions, budgets, categories, bills, piggy banks, reports, rules, recurring transactions, attachments, currencies, exports, object groups, and transaction links.
   - icon: 🔌
     title: stdio & HTTP
     details: Connect locally via Personal Access Token (stdio), or self-host with OAuth 2.0 for remote access from any MCP-compatible client.

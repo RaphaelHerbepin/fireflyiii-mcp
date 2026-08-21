@@ -48,6 +48,8 @@ export const TOOL_PROJECTIONS: Record<string, ToolProjection | typeof NO_PROJECT
   // ── accounts ────────────────────────────────────────────────────────────────
   get_accounts: { entity: 'accounts', kind: 'list', default: 'compact' },
   get_account: { entity: 'accounts', kind: 'single', default: 'standard' },
+  // Autocomplete rows are already minimal — id, label and a little context.
+  search_entities: NO_PROJECTION,
   search_accounts: { entity: 'accounts', kind: 'list', default: 'compact' },
 
   // ── other large listings ────────────────────────────────────────────────────

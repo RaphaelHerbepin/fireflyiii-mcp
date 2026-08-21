@@ -45,6 +45,7 @@ export const TABLE_DRIVEN_HELPERS = new Set([
   'fetchInsightGrouped',
   'exportEntity',
   'collectSplits',
+  'fetchAutocomplete',
 ]);
 
 export interface ScannedRoute {

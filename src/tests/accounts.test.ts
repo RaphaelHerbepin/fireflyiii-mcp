@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { FireflyClient } from '../client.js';
+import { clearCompletionCache } from '../tools/_completions.js';
 import {
   clearAccountsCache,
   createAccount,
@@ -255,18 +256,33 @@ describe('accounts autocomplete completions', () => {
 
   beforeEach(() => {
     clearAccountsCache();
+    clearCompletionCache();
   });
 
-  it('fetches all accounts (no type filter, limit 1000) and filters suggestions case-insensitively', async () => {
+  it('queries the autocomplete endpoint rather than filtering a full listing in memory', async () => {
+    // Previously this fetched up to 1 000 accounts on every keystroke and filtered them locally,
+    // which is a large response for a handful of labels and truncates past a thousand accounts.
     const client = { get: vi.fn(), cacheKey: () => 'test-key' } as unknown as FireflyClient;
     const complete = getAccountComplete(client);
 
-    vi.mocked(client.get).mockResolvedValueOnce(multiFixture);
+    vi.mocked(client.get).mockResolvedValueOnce([
+      { id: '2', name: 'Dieter', name_with_balance: 'Dieter', type: 'expense' },
+    ]);
 
-    // Completion with 'Dieter' should find the expense account.
     const results = await complete('Dieter');
-    expect(client.get).toHaveBeenCalledTimes(1);
-    expect(client.get).toHaveBeenCalledWith('/accounts', { limit: 1000 });
+    expect(client.get).toHaveBeenCalledWith('/autocomplete/accounts', { query: 'Dieter', limit: 100 });
+    expect(results).toEqual(['2 (Dieter)']);
+  });
+
+  it('falls back to the listing when the autocomplete endpoint is absent', async () => {
+    // Firefly versions predating /autocomplete/* must keep working rather than silently losing
+    // completions after an upgrade boundary.
+    const client = { get: vi.fn(), cacheKey: () => 'fallback-key' } as unknown as FireflyClient;
+    const complete = getAccountComplete(client);
+
+    vi.mocked(client.get).mockRejectedValueOnce(new Error('404')).mockResolvedValueOnce(multiFixture);
+
+    const results = await complete('Dieter');
     expect(results).toEqual(['2 (Dieter - expense)']);
   });
 
@@ -276,29 +292,62 @@ describe('accounts autocomplete completions', () => {
     const completeA = getAccountComplete(clientA);
     const completeB = getAccountComplete(clientB);
 
-    vi.mocked(clientA.get).mockResolvedValueOnce(multiFixture);
-    vi.mocked(clientB.get).mockResolvedValueOnce({
-      data: [{ id: '9', type: 'accounts', attributes: { name: 'Bob', type: 'asset', active: true }, links: {} }],
-      meta: { pagination: { current_page: 1, total_pages: 1, total: 1 } },
-    });
+    vi.mocked(clientA.get).mockResolvedValueOnce([{ id: '2', name_with_balance: 'Dieter' }]);
+    vi.mocked(clientB.get).mockResolvedValueOnce([{ id: '9', name_with_balance: 'Bob' }]);
 
-    expect(await completeA('Dieter')).toEqual(['2 (Dieter - expense)']);
-    // Different identity must trigger its own fetch, not reuse user A's cached accounts.
-    expect(await completeB('Bob')).toEqual(['9 (Bob - asset)']);
+    expect(await completeA('Dieter')).toEqual(['2 (Dieter)']);
+    // Different identity must trigger its own fetch, not reuse user A's cached results.
+    expect(await completeB('Bob')).toEqual(['9 (Bob)']);
     expect(clientA.get).toHaveBeenCalledTimes(1);
     expect(clientB.get).toHaveBeenCalledTimes(1);
   });
 
-  it('evicts the cache on fetch failure so the next call re-fetches', async () => {
-    const client = { get: vi.fn(), cacheKey: () => 'test-key' } as unknown as FireflyClient;
+  it('returns nothing when both the endpoint and the fallback fail, rather than throwing', async () => {
+    // A completion handler must never throw: a failed suggestion should degrade to no suggestions,
+    // not break the tool call carrying it.
+    const client = { get: vi.fn(), cacheKey: () => 'failing-key' } as unknown as FireflyClient;
     const complete = getAccountComplete(client);
 
-    vi.mocked(client.get).mockRejectedValueOnce(new Error('Connection error'));
+    vi.mocked(client.get).mockRejectedValue(new Error('Connection error'));
     expect(await complete('')).toEqual([]);
+  });
 
-    // A failed fetch must not be cached: the next call retries and succeeds.
-    vi.mocked(client.get).mockResolvedValueOnce(multiFixture);
+  it('keeps a hit the endpoint matched on a field the label does not show', async () => {
+    // Firefly matches accounts on IBAN and account number too. Re-filtering the endpoint's results
+    // against the visible label would throw away exactly those hits — searching by IBAN would
+    // silently return nothing.
+    const client = { get: vi.fn(), cacheKey: () => 'iban-key' } as unknown as FireflyClient;
+    const complete = getAccountComplete(client);
+
+    vi.mocked(client.get).mockResolvedValueOnce([{ id: '4', name_with_balance: 'Compte courant' }]);
+
+    expect(await complete('FR7630001007941234567890185')).toEqual(['4 (Compte courant)']);
+  });
+
+  it('still filters locally when falling back to the listing', async () => {
+    // The fallback fetches everything, so the local filter is the only one there is.
+    const client = { get: vi.fn(), cacheKey: () => 'filter-key' } as unknown as FireflyClient;
+    const complete = getAccountComplete(client);
+
+    vi.mocked(client.get).mockRejectedValueOnce(new Error('404')).mockResolvedValueOnce(multiFixture);
+
     expect(await complete('Dieter')).toEqual(['2 (Dieter - expense)']);
-    expect(client.get).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not cache a failure, so the next keystroke retries', async () => {
+    // A rejected promise left in the cache would keep replaying the failure for the whole TTL, so a
+    // transient blip would look like an autocomplete that stopped working for a minute.
+    const client = { get: vi.fn(), cacheKey: () => 'retry-key' } as unknown as FireflyClient;
+    const complete = getAccountComplete(client);
+
+    // Both the endpoint and the listing fallback fail on the first attempt.
+    vi.mocked(client.get).mockRejectedValue(new Error('boom'));
+    expect(await complete('x')).toEqual([]);
+    const callsAfterFailure = vi.mocked(client.get).mock.calls.length;
+
+    vi.mocked(client.get).mockReset();
+    vi.mocked(client.get).mockResolvedValue([{ id: '2', name_with_balance: 'Dieter' }]);
+    expect(await complete('x')).toEqual(['2 (Dieter)']);
+    expect(callsAfterFailure).toBeGreaterThan(0);
   });
 });

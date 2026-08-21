@@ -1,6 +1,6 @@
 # Available tools
 
-146 tools across 15 groups. Use [Tool filtering](/reference/filtering) to load only what you need.
+147 tools across 16 groups. Use [Tool filtering](/reference/filtering) to load only what you need.
 
 ## Accounts
 
@@ -13,6 +13,12 @@
 | `delete_account` | Delete an account. This action cannot be undone. |
 | `get_account_transactions` | Get all transactions for a specific account, filterable by type and date range |
 | `search_accounts` | Search accounts by name, IBAN, or account number |
+
+## Search
+
+| Tool | Description |
+|------|-------------|
+| `search_entities` | Resolve a name to an ID across accounts, budgets, categories, bills, tags, piggy banks, rules, currencies and more |
 
 ## Aggregates
 
