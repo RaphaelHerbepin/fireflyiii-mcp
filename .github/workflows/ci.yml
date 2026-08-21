@@ -76,6 +76,26 @@ jobs:
         if: always() && github.event_name == 'pull_request' && matrix.node-version == 22
         uses: davelosert/vitest-coverage-report-action@v2
 
+  # Contract checks: the tool code against the vendored OpenAPI spec, and the documented tool counts
+  # against the tools actually registered. Kept out of the `test` matrix so it reports as its own
+  # red/green signal and does not run three times over.
+  contracts:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: for i in 1 2 3; do npm ci && break || sleep 5; done
+
+      - name: API coverage against spec 6.5.5
+        run: npx tsx scripts/check-api-coverage.ts
+
   # Relative audit: a PR may not introduce moderate+ advisories that its base
   # doesn't already have. Deliberately NOT absolute — when several security
   # advisories are open at once, each fix-PR would fail an absolute audit

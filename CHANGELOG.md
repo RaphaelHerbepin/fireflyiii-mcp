@@ -17,6 +17,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   instead of yielding a coverage report derived from a file the parser no longer understands.
 - `tsconfig.scripts.json`, plus `scripts/` in Biome's scope: files under `scripts/` were previously
   neither typechecked (the main tsconfig is rooted at `src`) nor linted. `npm run check` now covers them.
+- `scripts/check-api-coverage.ts` checks the tool code against the vendored spec in **both**
+  directions, and runs in CI as a new `contracts` job. Asking only "did we miss an operation?" is half
+  the question; asking "are we calling a route the spec does not define?" immediately surfaced seven
+  such routes inherited from upstream, four of which were previously unknown. Starting position:
+  **132/230 operations covered, 7 phantom routes.**
+- The check is relative to a recorded baseline, mirroring the repo's existing relative dependency
+  audit. An absolute check would be red from the day it lands until the last of 98 operations is
+  implemented, and a check that is permanently red stops being read. It fails on regression, and also
+  when a baseline entry has been resolved but not removed, so the debt list cannot go stale.
+- Routes reached through table-driven helpers (charts, grouped insights, no-X insights, CSV exports)
+  are resolved by importing those tables rather than guessing. A call the scanner cannot resolve and no
+  table claims is a hard error: a route scanner whose default failure mode is a silent false negative
+  is worse than none, because it reports green over unchecked code.
 - `npm run verify` runs the full gate (lint, both typechecks, tests, API coverage, tool counts).
   `npm run check` stays as-is because it is the pre-commit hook and must remain fast.
 

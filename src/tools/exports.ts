@@ -5,7 +5,7 @@ import type { QueryParams } from '../types.js';
 import { READ_ANNOTATIONS } from './_annotations.js';
 import { dateSchema, defineTool } from './_helpers.js';
 
-type ExportEntity =
+export type ExportEntity =
   | 'transactions'
   | 'accounts'
   | 'bills'
@@ -27,7 +27,12 @@ export async function exportEntity(
   return client.getText(`/data/export/${entity}`, query);
 }
 
-const EXPORT_TOOLS: Array<{ name: string; title: string; entity: ExportEntity; hasDates: boolean }> = [
+/**
+ * CSV export tools, one per entity. Exported so scripts/check-api-coverage.ts can expand
+ * `/data/export/${entity}` into the nine concrete paths it covers; a naive scan reads the template
+ * literal as one unresolved route and reports all nine as missing.
+ */
+export const EXPORT_TOOLS: Array<{ name: string; title: string; entity: ExportEntity; hasDates: boolean }> = [
   { name: 'export_transactions', title: 'Export Transactions', entity: 'transactions', hasDates: true },
   { name: 'export_accounts', title: 'Export Accounts', entity: 'accounts', hasDates: false },
   { name: 'export_bills', title: 'Export Bills', entity: 'bills', hasDates: false },

@@ -56,15 +56,62 @@ export async function fetchInsightIncome(client: FireflyClient, start: string, e
   return client.get('/insight/income/category', { start, end });
 }
 
-type InsightNoXEndpoint =
-  | '/insight/expense/no-bill'
-  | '/insight/expense/no-budget'
-  | '/insight/expense/no-category'
-  | '/insight/expense/no-tag'
-  | '/insight/income/no-category'
-  | '/insight/income/no-tag'
-  | '/insight/transfer/no-category'
-  | '/insight/transfer/no-tag';
+/**
+ * "No X attached" insight endpoints, one tool each. Exported so scripts/check-api-coverage.ts can
+ * resolve them: fetchInsightNoX takes its route as a parameter, which static analysis cannot follow.
+ */
+export const INSIGHT_NO_X_TOOLS = [
+  {
+    name: 'get_insight_expenses_no_bill',
+    title: 'Get Expense Insights — No Bill',
+    subject: 'expense totals for transactions that have no bill attached',
+    endpoint: '/insight/expense/no-bill',
+  },
+  {
+    name: 'get_insight_expenses_no_budget',
+    title: 'Get Expense Insights — No Budget',
+    subject: 'expense totals for transactions that have no budget attached',
+    endpoint: '/insight/expense/no-budget',
+  },
+  {
+    name: 'get_insight_expenses_no_category',
+    title: 'Get Expense Insights — No Category',
+    subject: 'expense totals for transactions that have no category attached',
+    endpoint: '/insight/expense/no-category',
+  },
+  {
+    name: 'get_insight_expenses_no_tag',
+    title: 'Get Expense Insights — No Tag',
+    subject: 'expense totals for transactions that have no tag attached',
+    endpoint: '/insight/expense/no-tag',
+  },
+  {
+    name: 'get_insight_income_no_category',
+    title: 'Get Income Insights — No Category',
+    subject: 'income totals for transactions that have no category attached',
+    endpoint: '/insight/income/no-category',
+  },
+  {
+    name: 'get_insight_income_no_tag',
+    title: 'Get Income Insights — No Tag',
+    subject: 'income totals for transactions that have no tag attached',
+    endpoint: '/insight/income/no-tag',
+  },
+  {
+    name: 'get_insight_transfer_no_category',
+    title: 'Get Transfer Insights — No Category',
+    subject: 'transfer totals for transactions that have no category attached',
+    endpoint: '/insight/transfer/no-category',
+  },
+  {
+    name: 'get_insight_transfer_no_tag',
+    title: 'Get Transfer Insights — No Tag',
+    subject: 'transfer totals for transactions that have no tag attached',
+    endpoint: '/insight/transfer/no-tag',
+  },
+] as const satisfies ReadonlyArray<{ name: string; title: string; subject: string; endpoint: string }>;
+
+type InsightNoXEndpoint = (typeof INSIGHT_NO_X_TOOLS)[number]['endpoint'];
 
 export async function fetchInsightNoX(
   client: FireflyClient,
@@ -142,6 +189,153 @@ export async function fetchInsightGrouped(
   const query: QueryParams = { start, end, ...filters };
   return client.get(endpoint, query);
 }
+
+/**
+ * Chart endpoints, one tool each. Exported so scripts/check-api-coverage.ts can resolve the
+ * routes these tools reach: the client call sites pass `endpoint` as a variable, which static
+ * analysis cannot follow. Keeping the table as the single source of truth means tsc catches drift.
+ */
+export const CHART_ENDPOINTS: Record<string, { title: string; description: string; endpoint: string }> = {
+  get_account_overview_chart: {
+    title: 'Get Account Overview Chart',
+    description: 'Get chart data showing account balances over a date range.',
+    endpoint: '/chart/account/overview',
+  },
+  get_balance_chart: {
+    title: 'Get Balance Chart',
+    description: 'Get chart data showing balance changes over a date range.',
+    endpoint: '/chart/balance/balance',
+  },
+  get_budget_chart: {
+    title: 'Get Budget Chart',
+    description: 'Get chart data showing budget usage over a date range.',
+    endpoint: '/chart/budget/overview',
+  },
+  get_category_chart: {
+    title: 'Get Category Chart',
+    description: 'Get chart data showing spending by category over a date range.',
+    endpoint: '/chart/category/overview',
+  },
+};
+
+/**
+ * Grouped insight endpoints, one tool each. Exported for the same reason as {@link CHART_ENDPOINTS}.
+ */
+export const INSIGHT_GROUPED_TOOLS: Array<{
+  name: string;
+  title: string;
+  description: string;
+  endpoint: string;
+  filterKey?: string;
+  filterDesc?: string;
+}> = [
+  {
+    name: 'get_insight_expenses_by_bill',
+    title: 'Get Expense Insights by Bill',
+    description: 'Get expense totals grouped by bill for a date range.',
+    endpoint: '/insight/expense/bill',
+    filterKey: 'bills',
+    filterDesc: 'Filter to specific bill IDs',
+  },
+  {
+    name: 'get_insight_expenses_by_budget',
+    title: 'Get Expense Insights by Budget',
+    description: 'Get expense totals grouped by budget for a date range.',
+    endpoint: '/insight/expense/budget',
+    filterKey: 'budgets',
+    filterDesc: 'Filter to specific budget IDs',
+  },
+  {
+    name: 'get_insight_expenses_by_tag',
+    title: 'Get Expense Insights by Tag',
+    description: 'Get expense totals grouped by tag for a date range.',
+    endpoint: '/insight/expense/tag',
+    filterKey: 'tags',
+    filterDesc: 'Filter to specific tag IDs',
+  },
+  {
+    name: 'get_insight_expenses_by_asset',
+    title: 'Get Expense Insights by Asset Account',
+    description: 'Get expense totals grouped by asset account for a date range.',
+    endpoint: '/insight/expense/asset',
+    filterKey: 'assets',
+    filterDesc: 'Filter to specific asset account IDs',
+  },
+  {
+    name: 'get_insight_expenses_by_expense_account',
+    title: 'Get Expense Insights by Expense Account',
+    description: 'Get expense totals grouped by expense account for a date range.',
+    endpoint: '/insight/expense/expense',
+    filterKey: 'accounts',
+    filterDesc: 'Filter to specific expense account IDs',
+  },
+  {
+    name: 'get_insight_expenses_total',
+    title: 'Get Total Expenses',
+    description: 'Get total expense amount for a date range, grouped by currency.',
+    endpoint: '/insight/expense/total',
+  },
+  {
+    name: 'get_insight_income_by_revenue',
+    title: 'Get Income Insights by Revenue Account',
+    description: 'Get income totals grouped by revenue account for a date range.',
+    endpoint: '/insight/income/revenue',
+    filterKey: 'revenue',
+    filterDesc: 'Filter to specific revenue account IDs',
+  },
+  {
+    name: 'get_insight_income_by_tag',
+    title: 'Get Income Insights by Tag',
+    description: 'Get income totals grouped by tag for a date range.',
+    endpoint: '/insight/income/tag',
+    filterKey: 'tags',
+    filterDesc: 'Filter to specific tag IDs',
+  },
+  {
+    name: 'get_insight_income_by_asset',
+    title: 'Get Income Insights by Asset Account',
+    description: 'Get income totals grouped by asset account for a date range.',
+    endpoint: '/insight/income/asset',
+    filterKey: 'assets',
+    filterDesc: 'Filter to specific asset account IDs',
+  },
+  {
+    name: 'get_insight_income_total',
+    title: 'Get Total Income',
+    description: 'Get total income amount for a date range, grouped by currency.',
+    endpoint: '/insight/income/total',
+  },
+  {
+    name: 'get_insight_transfers_by_category',
+    title: 'Get Transfer Insights by Category',
+    description: 'Get transfer totals grouped by category for a date range.',
+    endpoint: '/insight/transfer/category',
+    filterKey: 'categories',
+    filterDesc: 'Filter to specific category IDs',
+  },
+  {
+    name: 'get_insight_transfers_by_tag',
+    title: 'Get Transfer Insights by Tag',
+    description: 'Get transfer totals grouped by tag for a date range.',
+    endpoint: '/insight/transfer/tag',
+    filterKey: 'tags',
+    filterDesc: 'Filter to specific tag IDs',
+  },
+  {
+    name: 'get_insight_transfers_by_asset',
+    title: 'Get Transfer Insights by Asset Account',
+    description: 'Get transfer totals grouped by asset account for a date range.',
+    endpoint: '/insight/transfer/asset',
+    filterKey: 'assets',
+    filterDesc: 'Filter to specific asset account IDs',
+  },
+  {
+    name: 'get_insight_transfers_total',
+    title: 'Get Total Transfers',
+    description: 'Get total transfer amount for a date range, grouped by currency.',
+    endpoint: '/insight/transfer/total',
+  },
+];
 
 export function registerReportTools(server: McpServer, client: FireflyClient): void {
   defineTool(
@@ -283,133 +477,22 @@ export function registerReportTools(server: McpServer, client: FireflyClient): v
     ({ id }) => deleteTag(client, id as string),
   );
 
-  defineTool(
-    server,
-    'get_insight_expenses_no_bill',
-    {
-      title: 'Get Expense Insights — No Bill',
-      description:
-        'Get expense totals for transactions that have no bill attached, grouped by currency. Both start and end dates (YYYY-MM-DD) are required.',
-      inputSchema: {
-        start: dateSchema.describe('Start date (YYYY-MM-DD)'),
-        end: dateSchema.describe('End date (YYYY-MM-DD)'),
+  for (const { name, title, subject, endpoint } of INSIGHT_NO_X_TOOLS) {
+    defineTool(
+      server,
+      name,
+      {
+        title,
+        description: `Get ${subject}, grouped by currency. Both start and end dates (YYYY-MM-DD) are required.`,
+        inputSchema: {
+          start: dateSchema.describe('Start date (YYYY-MM-DD)'),
+          end: dateSchema.describe('End date (YYYY-MM-DD)'),
+        },
+        annotations: READ_ANNOTATIONS,
       },
-      annotations: READ_ANNOTATIONS,
-    },
-    ({ start, end }) => fetchInsightNoX(client, '/insight/expense/no-bill', start as string, end as string),
-  );
-
-  defineTool(
-    server,
-    'get_insight_expenses_no_budget',
-    {
-      title: 'Get Expense Insights — No Budget',
-      description:
-        'Get expense totals for transactions that have no budget attached, grouped by currency. Both start and end dates (YYYY-MM-DD) are required.',
-      inputSchema: {
-        start: dateSchema.describe('Start date (YYYY-MM-DD)'),
-        end: dateSchema.describe('End date (YYYY-MM-DD)'),
-      },
-      annotations: READ_ANNOTATIONS,
-    },
-    ({ start, end }) => fetchInsightNoX(client, '/insight/expense/no-budget', start as string, end as string),
-  );
-
-  defineTool(
-    server,
-    'get_insight_expenses_no_category',
-    {
-      title: 'Get Expense Insights — No Category',
-      description:
-        'Get expense totals for transactions that have no category attached, grouped by currency. Both start and end dates (YYYY-MM-DD) are required.',
-      inputSchema: {
-        start: dateSchema.describe('Start date (YYYY-MM-DD)'),
-        end: dateSchema.describe('End date (YYYY-MM-DD)'),
-      },
-      annotations: READ_ANNOTATIONS,
-    },
-    ({ start, end }) => fetchInsightNoX(client, '/insight/expense/no-category', start as string, end as string),
-  );
-
-  defineTool(
-    server,
-    'get_insight_expenses_no_tag',
-    {
-      title: 'Get Expense Insights — No Tag',
-      description:
-        'Get expense totals for transactions that have no tag attached, grouped by currency. Both start and end dates (YYYY-MM-DD) are required.',
-      inputSchema: {
-        start: dateSchema.describe('Start date (YYYY-MM-DD)'),
-        end: dateSchema.describe('End date (YYYY-MM-DD)'),
-      },
-      annotations: READ_ANNOTATIONS,
-    },
-    ({ start, end }) => fetchInsightNoX(client, '/insight/expense/no-tag', start as string, end as string),
-  );
-
-  defineTool(
-    server,
-    'get_insight_income_no_category',
-    {
-      title: 'Get Income Insights — No Category',
-      description:
-        'Get income totals for transactions that have no category attached, grouped by currency. Both start and end dates (YYYY-MM-DD) are required.',
-      inputSchema: {
-        start: dateSchema.describe('Start date (YYYY-MM-DD)'),
-        end: dateSchema.describe('End date (YYYY-MM-DD)'),
-      },
-      annotations: READ_ANNOTATIONS,
-    },
-    ({ start, end }) => fetchInsightNoX(client, '/insight/income/no-category', start as string, end as string),
-  );
-
-  defineTool(
-    server,
-    'get_insight_income_no_tag',
-    {
-      title: 'Get Income Insights — No Tag',
-      description:
-        'Get income totals for transactions that have no tag attached, grouped by currency. Both start and end dates (YYYY-MM-DD) are required.',
-      inputSchema: {
-        start: dateSchema.describe('Start date (YYYY-MM-DD)'),
-        end: dateSchema.describe('End date (YYYY-MM-DD)'),
-      },
-      annotations: READ_ANNOTATIONS,
-    },
-    ({ start, end }) => fetchInsightNoX(client, '/insight/income/no-tag', start as string, end as string),
-  );
-
-  defineTool(
-    server,
-    'get_insight_transfer_no_category',
-    {
-      title: 'Get Transfer Insights — No Category',
-      description:
-        'Get transfer totals for transactions that have no category attached, grouped by currency. Both start and end dates (YYYY-MM-DD) are required.',
-      inputSchema: {
-        start: dateSchema.describe('Start date (YYYY-MM-DD)'),
-        end: dateSchema.describe('End date (YYYY-MM-DD)'),
-      },
-      annotations: READ_ANNOTATIONS,
-    },
-    ({ start, end }) => fetchInsightNoX(client, '/insight/transfer/no-category', start as string, end as string),
-  );
-
-  defineTool(
-    server,
-    'get_insight_transfer_no_tag',
-    {
-      title: 'Get Transfer Insights — No Tag',
-      description:
-        'Get transfer totals for transactions that have no tag attached, grouped by currency. Both start and end dates (YYYY-MM-DD) are required.',
-      inputSchema: {
-        start: dateSchema.describe('Start date (YYYY-MM-DD)'),
-        end: dateSchema.describe('End date (YYYY-MM-DD)'),
-      },
-      annotations: READ_ANNOTATIONS,
-    },
-    ({ start, end }) => fetchInsightNoX(client, '/insight/transfer/no-tag', start as string, end as string),
-  );
+      ({ start, end }) => fetchInsightNoX(client, endpoint, start as string, end as string),
+    );
+  }
 
   defineTool(
     server,
@@ -440,29 +523,6 @@ export function registerReportTools(server: McpServer, client: FireflyClient): v
     ({ start, end, currency_code }) =>
       fetchNetWorth(client, start as string, end as string, currency_code as string | undefined),
   );
-
-  const CHART_ENDPOINTS: Record<string, { title: string; description: string; endpoint: string }> = {
-    get_account_overview_chart: {
-      title: 'Get Account Overview Chart',
-      description: 'Get chart data showing account balances over a date range.',
-      endpoint: '/chart/account/overview',
-    },
-    get_balance_chart: {
-      title: 'Get Balance Chart',
-      description: 'Get chart data showing balance changes over a date range.',
-      endpoint: '/chart/balance/balance',
-    },
-    get_budget_chart: {
-      title: 'Get Budget Chart',
-      description: 'Get chart data showing budget usage over a date range.',
-      endpoint: '/chart/budget/overview',
-    },
-    get_category_chart: {
-      title: 'Get Category Chart',
-      description: 'Get chart data showing spending by category over a date range.',
-      endpoint: '/chart/category/overview',
-    },
-  };
 
   for (const [name, { title, description, endpoint }] of Object.entries(CHART_ENDPOINTS)) {
     defineTool(
@@ -497,122 +557,6 @@ export function registerReportTools(server: McpServer, client: FireflyClient): v
     },
     ({ from, to, date }) => fetchExchangeRate(client, from as string, to as string, date as string | undefined),
   );
-
-  const INSIGHT_GROUPED_TOOLS: Array<{
-    name: string;
-    title: string;
-    description: string;
-    endpoint: string;
-    filterKey?: string;
-    filterDesc?: string;
-  }> = [
-    {
-      name: 'get_insight_expenses_by_bill',
-      title: 'Get Expense Insights by Bill',
-      description: 'Get expense totals grouped by bill for a date range.',
-      endpoint: '/insight/expense/bill',
-      filterKey: 'bills',
-      filterDesc: 'Filter to specific bill IDs',
-    },
-    {
-      name: 'get_insight_expenses_by_budget',
-      title: 'Get Expense Insights by Budget',
-      description: 'Get expense totals grouped by budget for a date range.',
-      endpoint: '/insight/expense/budget',
-      filterKey: 'budgets',
-      filterDesc: 'Filter to specific budget IDs',
-    },
-    {
-      name: 'get_insight_expenses_by_tag',
-      title: 'Get Expense Insights by Tag',
-      description: 'Get expense totals grouped by tag for a date range.',
-      endpoint: '/insight/expense/tag',
-      filterKey: 'tags',
-      filterDesc: 'Filter to specific tag IDs',
-    },
-    {
-      name: 'get_insight_expenses_by_asset',
-      title: 'Get Expense Insights by Asset Account',
-      description: 'Get expense totals grouped by asset account for a date range.',
-      endpoint: '/insight/expense/asset',
-      filterKey: 'assets',
-      filterDesc: 'Filter to specific asset account IDs',
-    },
-    {
-      name: 'get_insight_expenses_by_expense_account',
-      title: 'Get Expense Insights by Expense Account',
-      description: 'Get expense totals grouped by expense account for a date range.',
-      endpoint: '/insight/expense/expense',
-      filterKey: 'accounts',
-      filterDesc: 'Filter to specific expense account IDs',
-    },
-    {
-      name: 'get_insight_expenses_total',
-      title: 'Get Total Expenses',
-      description: 'Get total expense amount for a date range, grouped by currency.',
-      endpoint: '/insight/expense/total',
-    },
-    {
-      name: 'get_insight_income_by_revenue',
-      title: 'Get Income Insights by Revenue Account',
-      description: 'Get income totals grouped by revenue account for a date range.',
-      endpoint: '/insight/income/revenue',
-      filterKey: 'revenue',
-      filterDesc: 'Filter to specific revenue account IDs',
-    },
-    {
-      name: 'get_insight_income_by_tag',
-      title: 'Get Income Insights by Tag',
-      description: 'Get income totals grouped by tag for a date range.',
-      endpoint: '/insight/income/tag',
-      filterKey: 'tags',
-      filterDesc: 'Filter to specific tag IDs',
-    },
-    {
-      name: 'get_insight_income_by_asset',
-      title: 'Get Income Insights by Asset Account',
-      description: 'Get income totals grouped by asset account for a date range.',
-      endpoint: '/insight/income/asset',
-      filterKey: 'assets',
-      filterDesc: 'Filter to specific asset account IDs',
-    },
-    {
-      name: 'get_insight_income_total',
-      title: 'Get Total Income',
-      description: 'Get total income amount for a date range, grouped by currency.',
-      endpoint: '/insight/income/total',
-    },
-    {
-      name: 'get_insight_transfers_by_category',
-      title: 'Get Transfer Insights by Category',
-      description: 'Get transfer totals grouped by category for a date range.',
-      endpoint: '/insight/transfer/category',
-      filterKey: 'categories',
-      filterDesc: 'Filter to specific category IDs',
-    },
-    {
-      name: 'get_insight_transfers_by_tag',
-      title: 'Get Transfer Insights by Tag',
-      description: 'Get transfer totals grouped by tag for a date range.',
-      endpoint: '/insight/transfer/tag',
-      filterKey: 'tags',
-      filterDesc: 'Filter to specific tag IDs',
-    },
-    {
-      name: 'get_insight_transfers_by_asset',
-      title: 'Get Transfer Insights by Asset Account',
-      description: 'Get transfer totals grouped by asset account for a date range.',
-      endpoint: '/insight/transfer/asset',
-      filterKey: 'assets',
-      filterDesc: 'Filter to specific asset account IDs',
-    },
-    {
-      name: 'get_insight_transfers_total',
-      title: 'Get Total Transfers',
-      description: 'Get total transfer amount for a date range, grouped by currency.',
-      endpoint: '/insight/transfer/total',
-    },
-  ];
 
   for (const { name, title, description, endpoint, filterKey, filterDesc } of INSIGHT_GROUPED_TOOLS) {
     const inputSchema: Record<string, z.ZodTypeAny> = {
