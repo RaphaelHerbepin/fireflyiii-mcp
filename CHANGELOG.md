@@ -226,6 +226,10 @@ retargeted, four removed:
   stripping query strings all along. Timeouts are now `FireflyTimeoutError` and strip it too.
 - `403` and `429` responses carry an actionable message instead of falling through to `API error N.`
   The admin endpoints return 403 routinely on an ordinary token.
+- `.gitignore` now ignores every `.env.*` variant and re-admits the templates, instead of listing
+  each real file by name. `.env.dev` was introduced with the dev stack and was not covered — a token
+  pasted into it would have been committable. Listing files individually means the protection depends
+  on remembering, which is the part that fails.
 - `FireflyClient.delete` accepts query parameters. `DELETE /data/destroy` requires an `objects`
   parameter that the spec documents nowhere — the instance returns 422 without it.
 

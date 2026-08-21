@@ -13,11 +13,14 @@ docs/.vitepress/cache
 docker-compose.override.yml
 docker-compose.override.yaml
 
-# Environment — never commit real secrets
+# Environment — never commit real secrets.
+# Ignore every .env variant and re-admit the templates, rather than listing each real file: adding a
+# new .env.<something> is routine, and remembering to ignore it is exactly what gets forgotten.
 .env
-.env.local
-.env.*.local
-.env.test
+.env.*
+!.env.example
+!.env.dev.example
+!.env.test.example
 
 # Claude Code — local/machine-specific settings only
 # .claude/settings.json is intentionally NOT ignored (project MCP config)
