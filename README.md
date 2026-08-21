@@ -156,6 +156,43 @@ Relative to [daften/fireflyiii-mcp](https://github.com/daften/fireflyiii-mcp):
   the filter now derives from tool annotations rather than naming convention. Sensitive values are
   redacted from debug output, and `403` responses carry an actionable message.
 
+## Measured
+
+Produced by `scripts/benchmark-context.ts` against a live Firefly III 6.5.5 instance holding 2 008
+transactions across 18 months.
+
+### Context cost per preset
+
+| Preset | Tools | `tools/list` |
+|--------|-------|--------------|
+| `minimal` | 19 | ~5,165 tokens |
+| `default` | 54 | ~13,178 tokens |
+| `budgeting` | 61 | ~14,709 tokens |
+| `insights` | 68 | ~14,312 tokens |
+| `automation` | 54 | ~13,677 tokens |
+| `full` | 207 | ~41,008 tokens |
+
+### Cost of answering a question
+
+| Question | Raw JSON:API | Upstream | `standard` | `compact` | Saved |
+|----------|--------------|----------|------------|-----------|-------|
+| One month of expenses | ~44,902 | ~39,584 | ~8,370 | **~4,710** | **-88.1%** |
+| A full page of transactions | ~90,628 | ~80,078 | ~17,008 | **~9,578** | **-88.0%** |
+
+### Cost of a question aggregation answers
+
+| Question | Reading the rows | Aggregating | Saved |
+|----------|------------------|-------------|-------|
+| Spending by budget, 18 months | ~191,600 (20 pages, compact) | **~339** | **-99.8%** |
+| Month-by-month per budget | ~191,600 (same rows, grouped by hand) | **~1,166** | **-99.4%** |
+
+_Token counts are estimates at four characters per token, measured against a live instance._
+
+The second table is the one the fork exists for. Answering "what did I spend per budget over the last
+eighteen months" by reading the transactions costs about 190 000 tokens — more than most context
+windows — and the model still has to do the arithmetic. Asking the server costs 339 tokens and the
+figures are exact to the cent.
+
 ## Acknowledgements
 
 Forked from [daften/fireflyiii-mcp](https://github.com/daften/fireflyiii-mcp) by Dieter Blomme, whose hand-written tool definitions, Zod schemas, MCP annotations and test suite are the foundation this fork builds on. Original work MIT licensed; the licence and attribution are preserved in [LICENSE](LICENSE).

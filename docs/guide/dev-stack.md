@@ -58,6 +58,29 @@ npm run test:integration        # reads .env.test
 Point `.env.test` at the dev stack. Tests needing the seeded dataset are additionally gated on
 `FIREFLY_SEEDED=true`, so an empty instance runs the rest without failing.
 
+## Measure the difference
+
+```bash
+npm run benchmark        # reads .env.dev
+```
+
+Prints the two tables in the README: what each preset costs a context window, and what projection and
+aggregation save on real questions. Needs the seeded dataset to be meaningful.
+
+## Enable webhooks
+
+The webhook surface answers 404 — including reads — until it is switched on. The flag lives in the
+database, not in `ALLOW_WEBHOOKS`, which `config/firefly.php` marks "no longer used". The dev stack
+sets the environment variable anyway, but a user with the owner role still has to flip it:
+
+```bash
+curl -X PUT -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  http://localhost:8080/api/v1/configuration/configuration.allow_webhooks -d '{"value":true}'
+```
+
+Or through the server itself, with `set_configuration_value`. The token minted by
+`ci-create-token.sh` does not have the owner role by default.
+
 ## Tear it down
 
 ```bash

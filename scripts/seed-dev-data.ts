@@ -217,11 +217,14 @@ async function main(): Promise<number> {
   if (existing.data.length > 0 && !options.force) {
     process.stderr.write(
       'This instance already holds seeded data. Re-running would double it.\n' +
-        'Pass --force to purge the existing transactions first.\n',
+        'Pass --force to purge everything first.\n',
     );
     return 1;
   }
-  if (existing.data.length > 0 && options.force) {
+  // Purge unconditionally under --force, not only when seeded transactions are found. A previous run
+  // that failed part-way leaves accounts behind with no transactions, and keying the purge on
+  // transactions alone means --force reports success and then collides on duplicate account names.
+  if (options.force) {
     process.stderr.write('  --force: purging existing data…\n');
     // One pass per object type, in dependency order. `objects=accounts` alone only clears expense
     // accounts, so a single call leaves asset, revenue and liability accounts behind and the next run
@@ -548,7 +551,10 @@ async function main(): Promise<number> {
     add(manifest.totals.byCategory, categories[12].name, instalment);
   }
 
-  // A couple of USD withdrawals, excluded from the EUR totals on purpose.
+  // A few USD withdrawals, excluded from the EUR totals on purpose so the multi-currency guards have
+  // something to guard. They carry no budget and no category, so they count towards those tallies:
+  // the API counts transactions, not transactions-in-one-currency, and an oracle that disagreed with
+  // it would be the thing that is wrong.
   for (let i = 0; i < 6; i++) {
     push({
       error_if_duplicate_hash: false,
@@ -567,6 +573,8 @@ async function main(): Promise<number> {
         },
       ],
     });
+    manifest.counts.unbudgeted++;
+    manifest.counts.uncategorised++;
   }
 
   manifest.counts.total = jobs.length;

@@ -6,7 +6,10 @@
 
 Users can query their finances in natural language through Claude, getting answers about accounts, transactions, budgets, categories, bills, piggy banks, and financial insights without writing queries themselves.
 
-**Current state:** 207 tools across 20 groups, full CRUD, stdio and HTTP (OAuth or PAT) transports, tool filtering via `--preset`/`--groups`/`--read-only`.
+**Current state:** 207 tools across 20 groups, complete Firefly III API 6.5.5 coverage (230/230
+operations, verified by `scripts/check-api-coverage.ts`), field projection and server-side
+aggregation, stdio and HTTP (OAuth or PAT) transports, tool filtering via
+`--preset`/`--groups`/`--read-only`.
 
 ### Architecture at a glance
 

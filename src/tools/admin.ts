@@ -229,8 +229,7 @@ export function registerAdminTools(server: McpServer, client: FireflyClient): vo
     'create_user',
     {
       title: 'Create User',
-      description:
-        'Create a user on this instance. They receive their own separate set of financial data.' + ADMIN_HINT,
+      description: `Create a user on this instance. They receive their own separate set of financial data.${ADMIN_HINT}`,
       inputSchema: {
         email: z.string().email().describe('Email address, which is also the login'),
         blocked: z.boolean().optional().describe('Whether the account starts blocked'),

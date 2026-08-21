@@ -57,6 +57,16 @@ retargeted, four removed:
 
 ### Added
 
+- `scripts/benchmark-context.ts` measures what the server costs a context window and what the two
+  headline features save, against a live instance. Its output is in the README. It prints markdown to
+  stdout rather than editing the README itself: a script that rewrites documentation in CI is a script
+  nobody reviews.
+- `src/tests/integration-fork.test.ts` checks the fork's own behaviour against a live instance —
+  projection actually reduces payloads, `--read-only` keeps the tools it used to drop, and the
+  aggregates match the seed manifest to the cent. Gated on `FIREFLY_SEEDED` separately from
+  `FIREFLY_INTEGRATION`, so the tests needing 2 000 seeded transactions do not fail against an empty
+  CI instance.
+
 - **Complete API 6.5.5 coverage: 230/230 operations**, verified mechanically by
   `scripts/check-api-coverage.ts` against the vendored spec, with zero phantom routes. One documented
   exception: `getCron` takes the instance's CLI token, and a tool parameter is a text field in a

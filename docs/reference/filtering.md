@@ -42,22 +42,26 @@ node dist/index.js --groups rules --read-only
 Without any filter flags the server registers all 207 tools (equivalent to `--preset full`).
 
 ::: warning `full` is for exploration, not daily use
-Every tool definition costs context before a single call is made. Measured with
+Every tool definition costs context before a single call is made. Measured by
 `scripts/check-tool-counts.sh`:
 
 | Preset | Tools | `tools/list` cost |
 |--------|-------|-------------------|
-| `minimal` | 15 | ~4 200 tokens |
-| `default` | 43 | ~10 700 tokens |
-| `budgeting` | 50 | ~12 000 tokens |
-| `insights` | 63 | ~13 100 tokens |
-| `automation` | 37 | ~10 200 tokens |
-| `full` | 146 | ~29 300 tokens |
+| `minimal` | 19 | ~5 200 tokens |
+| `default` | 54 | ~13 200 tokens |
+| `budgeting` | 61 | ~14 700 tokens |
+| `insights` | 68 | ~14 300 tokens |
+| `automation` | 54 | ~13 700 tokens |
+| `full` | 207 | ~41 000 tokens |
 
-`full` spends roughly 29 000 tokens of every conversation restating tools you will not call. Use it to
+`full` spends roughly 41 000 tokens of every conversation restating tools you will not call. Use it to
 find out what exists, then pick a preset. **For a Claude connector, `budgeting` is the sensible
-default**: it covers accounts, transactions, budgets, categories, bills, piggy banks and the aggregate
-tools for about 40% of the cost.
+default**: accounts, transactions, budgets, categories, bills, piggy banks, search and the aggregate
+tools, for about a third of the cost.
+
+`full` also excludes `admin-destructive`. Asking for every tool is asking to see what the server can
+do, not asking to be handed something that permanently erases an accounting history — those two tools
+need `--groups admin-destructive` naming them explicitly.
 :::
 
 ## Environment variable equivalents
