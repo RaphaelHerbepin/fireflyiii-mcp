@@ -1,6 +1,6 @@
 # Tool filtering
 
-With 160 tools across 17 groups, loading everything consumes significant context window space. Three flags let you control exactly which tools are registered.
+With 172 tools across 18 groups, loading everything consumes significant context window space. Three flags let you control exactly which tools are registered.
 
 ## --preset \<name\>
 
@@ -13,7 +13,7 @@ Load a named subset of tool groups:
 | `budgeting` | search, accounts, transactions, budgets, categories, bills, piggy-banks, aggregates | 53 |
 | `insights` | search, accounts, transactions, categories, reports, aggregates | 63 |
 | `automation` | search, accounts, transactions, rules, recurring, webhooks | 51 |
-| `full` | all 17 groups | 160 |
+| `full` | all 18 groups | 172 |
 
 ```bash
 node dist/index.js --preset default
@@ -24,7 +24,7 @@ npx @raphaelherbepin/fireflyiii-mcp --preset budgeting
 
 Comma-separated list of specific groups. Cannot combine with `--preset`.
 
-Valid group names: `accounts`, `aggregates`, `search`, `transactions`, `budgets`, `categories`, `bills`, `piggy-banks`, `reports`, `rules`, `recurring`, `attachments`, `currencies`, `exports`, `object-groups`, `transaction-links`, `webhooks`
+Valid group names: `accounts`, `aggregates`, `search`, `transactions`, `budgets`, `categories`, `bills`, `piggy-banks`, `reports`, `rules`, `recurring`, `attachments`, `currencies`, `exports`, `object-groups`, `transaction-links`, `webhooks`, `exchange-rates`
 
 ```bash
 node dist/index.js --groups accounts,transactions,reports
@@ -39,7 +39,7 @@ node dist/index.js --preset default --read-only
 node dist/index.js --groups rules --read-only
 ```
 
-Without any filter flags the server registers all 160 tools (equivalent to `--preset full`).
+Without any filter flags the server registers all 172 tools (equivalent to `--preset full`).
 
 ::: warning `full` is for exploration, not daily use
 Every tool definition costs context before a single call is made. Measured with

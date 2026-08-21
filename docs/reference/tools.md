@@ -1,6 +1,6 @@
 # Available tools
 
-160 tools across 17 groups. Use [Tool filtering](/reference/filtering) to load only what you need.
+172 tools across 18 groups. Use [Tool filtering](/reference/filtering) to load only what you need.
 
 ## Accounts
 
@@ -205,12 +205,29 @@ including reads — until a user with the owner role sets `configuration.allow_w
 | `submit_webhook` | Send every queued message now |
 | `trigger_transaction_webhook` | Replay one transaction through a webhook |
 
+## Exchange rates
+
+| Tool | Description |
+|------|-------------|
+| `get_exchange_rates` | List every recorded exchange rate |
+| `get_exchange_rate_by_id` | Get one rate by ID |
+| `get_exchange_rates_for_pair` | Every rate recorded for a currency pair, across all dates |
+| `get_exchange_rate_on_date` | The rate for a pair on one date |
+| `create_exchange_rate` | Record a rate for a pair on a date |
+| `update_exchange_rate` | Update a rate by ID |
+| `update_exchange_rate_on_date` | Update a rate by pair and date, without needing its ID |
+| `delete_exchange_rate` | Delete one rate. This action cannot be undone. |
+| `delete_exchange_rates_for_pair` | Delete every rate for a pair. This action cannot be undone. |
+| `delete_exchange_rate_on_date` | Delete the rate for a pair on one date. This action cannot be undone. |
+
 ## Currencies
 
 | Tool | Description |
 |------|-------------|
 | `get_currencies` | List all currencies configured in Firefly III |
 | `get_currency` | Get a single currency by code (e.g. EUR, USD) |
+| `get_primary_currency` | The administration's primary currency, the one totals are reported in |
+| `get_currency_related` | Accounts, bills, budget limits, recurrences, rules or transactions in one currency |
 | `create_currency` | Create a new currency |
 | `update_currency` | Update an existing currency |
 | `enable_currency` | Enable a currency for use in transactions |

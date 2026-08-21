@@ -7,6 +7,7 @@ import { registerBillTools } from './bills.js';
 import { registerBudgetTools } from './budgets.js';
 import { registerCategoryTools } from './categories.js';
 import { registerCurrencyTools } from './currencies.js';
+import { registerExchangeRateTools } from './exchange-rates.js';
 import { registerExportTools } from './exports.js';
 import { registerObjectGroupTools } from './object-groups.js';
 import { registerPiggyBankTools } from './piggy-banks.js';
@@ -36,6 +37,7 @@ export const TOOL_GROUPS = [
   'object-groups',
   'transaction-links',
   'webhooks',
+  'exchange-rates',
 ] as const;
 
 export type ToolGroup = (typeof TOOL_GROUPS)[number];
@@ -143,6 +145,7 @@ export function registerAllTools(server: McpServer, client: FireflyClient, optio
   if (activeGroups.has('accounts')) registerAccountTools(s, client);
   if (activeGroups.has('search')) registerSearchTools(s, client);
   if (activeGroups.has('webhooks')) registerWebhookTools(s, client);
+  if (activeGroups.has('exchange-rates')) registerExchangeRateTools(s, client);
   if (activeGroups.has('aggregates')) registerAggregateTools(s, client);
   if (activeGroups.has('transactions')) registerTransactionTools(s, client);
   if (activeGroups.has('budgets')) registerBudgetTools(s, client);

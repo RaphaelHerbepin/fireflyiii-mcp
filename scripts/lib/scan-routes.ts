@@ -46,6 +46,7 @@ export const TABLE_DRIVEN_HELPERS = new Set([
   'exportEntity',
   'collectSplits',
   'fetchAutocomplete',
+  'fetchCurrencyRelated',
 ]);
 
 export interface ScannedRoute {

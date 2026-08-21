@@ -91,6 +91,13 @@ export const TOOL_PROJECTIONS: Record<string, ToolProjection | typeof NO_PROJECT
   get_summary: NO_PROJECTION,
   get_about: NO_PROJECTION,
   get_exchange_rate: NO_PROJECTION,
+  get_exchange_rates: NO_PROJECTION,
+  get_exchange_rate_by_id: NO_PROJECTION,
+  get_exchange_rates_for_pair: NO_PROJECTION,
+  get_exchange_rate_on_date: NO_PROJECTION,
+  get_primary_currency: NO_PROJECTION,
+  // The shape depends on which sub-resource was asked for, so no single entity applies.
+  get_currency_related: NO_PROJECTION,
 
   // Insight and chart endpoints return purpose-built aggregate shapes, not entity records.
   get_insight_expenses: NO_PROJECTION,

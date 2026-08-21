@@ -9,8 +9,9 @@ import {
   unwrapList,
   unwrapSingle,
 } from '../transform.js';
+import type { QueryParams } from '../types.js';
 import { DELETE_ANNOTATIONS, READ_ANNOTATIONS, UPDATE_ANNOTATIONS, WRITE_ANNOTATIONS } from './_annotations.js';
-import { defineTool } from './_helpers.js';
+import { dateSchema, defineTool } from './_helpers.js';
 
 export async function fetchCurrencies(
   client: FireflyClient,
@@ -62,6 +63,50 @@ export async function setPrimaryCurrency(client: FireflyClient, code: string): P
   return unwrapSingle(response);
 }
 
+/** The administration's primary currency — the one totals are reported in. */
+export async function fetchPrimaryCurrency(client: FireflyClient): Promise<UnwrappedSingle> {
+  return unwrapSingle(await client.get<JsonApiSingleResponse>('/currencies/primary'));
+}
+
+/**
+ * Sub-resources reachable under a currency.
+ *
+ * Exported so scripts/check-api-coverage.ts can expand them: fetchCurrencyRelated takes the resource
+ * as a parameter, so static analysis sees a variable rather than seven routes.
+ */
+export const CURRENCY_SUBRESOURCES = [
+  'accounts',
+  'available-budgets',
+  'bills',
+  'budget-limits',
+  'recurrences',
+  'rules',
+  'transactions',
+] as const;
+
+export type CurrencySubresource = (typeof CURRENCY_SUBRESOURCES)[number];
+
+/**
+ * Records of one kind denominated in a given currency.
+ *
+ * One parameterised tool rather than seven. Multi-currency is a corner case for most instances, and
+ * seven permanent tool definitions to serve it is a poor trade against the context they occupy. If
+ * that ever stops being true, splitting this back out is mechanical.
+ */
+export async function fetchCurrencyRelated(
+  client: FireflyClient,
+  code: string,
+  resource: CurrencySubresource,
+  params: { start?: string; end?: string; page?: number; limit?: number },
+): Promise<UnwrappedList> {
+  const query: QueryParams = { page: params.page, limit: params.limit };
+  if (params.start) query.start = params.start;
+  if (params.end) query.end = params.end;
+  return unwrapList(
+    await client.get<JsonApiListResponse>(`/currencies/${encodeURIComponent(code)}/${resource}`, query),
+  );
+}
+
 export function registerCurrencyTools(server: McpServer, client: FireflyClient): void {
   defineTool(
     server,
@@ -89,6 +134,49 @@ export function registerCurrencyTools(server: McpServer, client: FireflyClient):
       annotations: READ_ANNOTATIONS,
     },
     ({ code }) => fetchCurrency(client, code as string),
+  );
+
+  defineTool(
+    server,
+    'get_primary_currency',
+    {
+      title: 'Get Primary Currency',
+      description:
+        "Get the administration's primary currency — the one Firefly III reports totals in. Worth " +
+        'checking before interpreting any figure on a multi-currency instance.',
+      inputSchema: {},
+      annotations: READ_ANNOTATIONS,
+    },
+    () => fetchPrimaryCurrency(client),
+  );
+
+  defineTool(
+    server,
+    'get_currency_related',
+    {
+      title: 'Get Records in a Currency',
+      description:
+        'List the accounts, bills, budget limits, recurrences, rules, available budgets or transactions ' +
+        'denominated in one currency. Useful on a multi-currency instance to see what a currency ' +
+        'actually touches before enabling, disabling or deleting it. Note: `available-budgets` returns ' +
+        'a server error on Firefly III 6.5.5 — that is an upstream defect, not a bad request.',
+      inputSchema: {
+        code: z.string().describe('Currency code, e.g. EUR'),
+        resource: z.enum(CURRENCY_SUBRESOURCES).describe('Which kind of record to list'),
+        start: dateSchema.optional().describe('Start date, for transactions and budget limits'),
+        end: dateSchema.optional().describe('End date, for transactions and budget limits'),
+        page: z.number().int().positive().optional().default(1).describe('Page number'),
+        limit: z.number().int().positive().max(100).optional().default(50).describe('Results per page (max 100)'),
+      },
+      annotations: READ_ANNOTATIONS,
+    },
+    ({ code, resource, start, end, page, limit }) =>
+      fetchCurrencyRelated(client, code as string, resource as CurrencySubresource, {
+        start: start as string | undefined,
+        end: end as string | undefined,
+        page: page as number | undefined,
+        limit: limit as number | undefined,
+      }),
   );
 
   defineTool(

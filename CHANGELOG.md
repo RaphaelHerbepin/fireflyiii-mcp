@@ -57,6 +57,18 @@ retargeted, four removed:
 
 ### Added
 
+- **An `exchange-rates` tool group** (10 tools) covering both ways Firefly III addresses a rate: by
+  its own ID, and by currency pair with an optional date. Both are exposed because they answer
+  different questions — "change this rate" against "what was EUR/USD on the 3rd" — and collapsing one
+  onto the other would cost a lookup on every call. Deleting a whole pair and deleting one date are
+  separate tools, since they differ by one path segment and a great deal of data.
+- `get_primary_currency`, and `get_currency_related` for the seven sub-resources under a currency
+  (accounts, bills, budget limits, recurrences, rules, available budgets, transactions). One
+  parameterised tool rather than seven: multi-currency is a corner case for most instances, and seven
+  permanent tool definitions is a poor trade against the context they occupy.
+  `available-budgets` returns a server error on Firefly III 6.5.5 — an upstream defect, noted in the
+  tool description so the failure is not mistaken for a bad request.
+
 - **A `webhooks` tool group** (13 tools): create, read, update and delete webhooks, inspect the
   messages they queue and each delivery attempt, flush the queue, and replay one transaction through
   a webhook. Included in the `automation` preset.
