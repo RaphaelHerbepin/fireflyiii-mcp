@@ -9,7 +9,7 @@ import {
   unwrapList,
   unwrapSingle,
 } from '../transform.js';
-import { DELETE_ANNOTATIONS, READ_ANNOTATIONS, UPDATE_ANNOTATIONS, WRITE_ANNOTATIONS } from './_annotations.js';
+import { DELETE_ANNOTATIONS, READ_ANNOTATIONS, UPDATE_ANNOTATIONS } from './_annotations.js';
 import { defineTool } from './_helpers.js';
 
 export async function fetchObjectGroups(

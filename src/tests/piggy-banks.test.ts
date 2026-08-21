@@ -102,9 +102,6 @@ const piggyEventFixture = {
   data: [{ id: '1', type: 'piggy_bank_events', attributes: { amount: '50.00', date: '2026-01-15' }, links: {} }],
   meta: { pagination: { current_page: 1, total_pages: 1, total: 1 } },
 };
-const piggyEventSingle = {
-  data: { id: '2', type: 'piggy_bank_events', attributes: { amount: '25.00', date: '2026-01-20' }, links: {} },
-};
 
 describe('fetchPiggyBankEvents', () => {
   it('calls /piggy-banks/:id/events', async () => {
