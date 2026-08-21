@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Vendored the Firefly III OpenAPI spec 6.5.5 under `spec/`, with its source URL, retrieval date and
+  SHA-256 recorded in `spec/README.md`. The spec is the authoritative reference for every tool, and
+  checking it in makes any change to it a reviewable diff rather than a silent shift in CI.
+- `scripts/lib/parse-spec.ts` extracts the spec's 230 operations without pulling in a YAML parser, and
+  asserts that operation and path counts still match. A reformatted upstream spec now fails loudly
+  instead of yielding a coverage report derived from a file the parser no longer understands.
+- `tsconfig.scripts.json`, plus `scripts/` in Biome's scope: files under `scripts/` were previously
+  neither typechecked (the main tsconfig is rooted at `src`) nor linted. `npm run check` now covers them.
+- `npm run verify` runs the full gate (lint, both typechecks, tests, API coverage, tool counts).
+  `npm run check` stays as-is because it is the pre-commit hook and must remain fast.
+
 ### Changed
 
 - **This repository is now a fork of [daften/fireflyiii-mcp](https://github.com/daften/fireflyiii-mcp).**

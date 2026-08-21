@@ -1,0 +1,12 @@
+{
+  "$comment": [
+    "Deliberate gaps in API coverage, and routes the code calls that the spec does not define.",
+    "Every entry needs a non-empty 'reason': check-api-coverage.ts rejects blank ones so this file",
+    "cannot quietly become a place to bury failures. Adding an entry is a decision, not a formality."
+  ],
+  "specVersion": "6.5.5",
+  "specSha256": "906276730447be340823e467134138fefd54320ddc53b47682b2f5d79b8e9fc8",
+  "specFingerprint": { "operations": 230, "paths": 164 },
+  "uncovered": [],
+  "phantomRoutes": []
+}
