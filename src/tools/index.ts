@@ -1,6 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { FireflyClient } from '../client.js';
 import { registerAccountTools } from './accounts.js';
+import { registerAggregateTools } from './aggregates.js';
 import { registerAttachmentTools } from './attachments.js';
 import { registerBillTools } from './bills.js';
 import { registerBudgetTools } from './budgets.js';
@@ -17,6 +18,7 @@ import { registerTransactionTools } from './transactions.js';
 
 export const TOOL_GROUPS = [
   'accounts',
+  'aggregates',
   'transactions',
   'budgets',
   'categories',
@@ -36,9 +38,9 @@ export type ToolGroup = (typeof TOOL_GROUPS)[number];
 
 export const PRESETS: Record<string, ToolGroup[]> = {
   minimal: ['accounts', 'transactions'],
-  default: ['accounts', 'transactions', 'budgets', 'categories', 'bills'],
-  budgeting: ['accounts', 'transactions', 'budgets', 'categories', 'bills', 'piggy-banks'],
-  insights: ['accounts', 'transactions', 'categories', 'reports'],
+  default: ['accounts', 'transactions', 'budgets', 'categories', 'bills', 'aggregates'],
+  budgeting: ['accounts', 'transactions', 'budgets', 'categories', 'bills', 'piggy-banks', 'aggregates'],
+  insights: ['accounts', 'transactions', 'categories', 'reports', 'aggregates'],
   automation: ['accounts', 'transactions', 'rules', 'recurring'],
   full: [...TOOL_GROUPS],
 };
@@ -83,6 +85,7 @@ export function registerAllTools(server: McpServer, client: FireflyClient, optio
   const s = readOnly ? makeReadOnlyProxy(server) : server;
 
   if (activeGroups.has('accounts')) registerAccountTools(s, client);
+  if (activeGroups.has('aggregates')) registerAggregateTools(s, client);
   if (activeGroups.has('transactions')) registerTransactionTools(s, client);
   if (activeGroups.has('budgets')) registerBudgetTools(s, client);
   if (activeGroups.has('categories')) registerCategoryTools(s, client);

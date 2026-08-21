@@ -1,6 +1,6 @@
 # Available tools
 
-140 tools across 14 groups. Use [Tool filtering](/reference/filtering) to load only what you need.
+146 tools across 15 groups. Use [Tool filtering](/reference/filtering) to load only what you need.
 
 ## Accounts
 
@@ -13,6 +13,21 @@
 | `delete_account` | Delete an account. This action cannot be undone. |
 | `get_account_transactions` | Get all transactions for a specific account, filterable by type and date range |
 | `search_accounts` | Search accounts by name, IBAN, or account number |
+
+## Aggregates
+
+Totals computed on the server, so a question about months of spending does not require months of
+transactions to cross the wire. These tools return figures and never rows. Amounts are summed exactly
+in decimal arithmetic, and multiple currencies are reported separately rather than added together.
+
+| Tool | Description |
+|------|-------------|
+| `get_transaction_aggregate` | Total transactions over a period, grouped by category, budget, month, type, account or tag |
+| `get_monthly_breakdown` | Month-by-month totals per budget or category, as a compact matrix |
+| `get_budget_performance` | Per budget: limit, spent, remaining, percentage used, and share of total expenses |
+| `get_spending_ratios` | Split expenses across caller-defined groups of budgets, as percentages summing to 100 |
+| `get_account_balance_history` | End-of-period account balances over a date range |
+| `search_uncategorized` | Count and total spending with no budget, no category, or neither |
 
 ## Transactions
 

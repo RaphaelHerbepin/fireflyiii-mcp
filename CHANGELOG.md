@@ -49,6 +49,26 @@ longer accepts. Each is recorded with its verdict in `spec/coverage-exceptions.j
 
 ### Added
 
+- **A new `aggregates` tool group** that totals on the server instead of shipping rows. Included in the
+  `default`, `budgeting`, `insights` and `full` presets.
+
+  | Tool | Answers |
+  |------|---------|
+  | `get_transaction_aggregate` | totals by category, budget, month, type, account or tag |
+  | `get_monthly_breakdown` | a month-by-month matrix per budget or category |
+  | `get_budget_performance` | limit, spent, remaining, share of expenses, per budget |
+  | `get_spending_ratios` | a 50/30/20-style split across caller-defined budget groups |
+  | `get_account_balance_history` | end-of-period balances per account |
+  | `search_uncategorized` | how much spending has no budget or category |
+
+  Measured against a seeded 2 008-transaction instance: an 18-month per-budget breakdown costs **338
+  tokens**, where fifty raw transactions cost ~41 000. Figures match the generator's own totals to the
+  cent across 1 998 splits.
+
+- `src/money.ts`: exact decimal arithmetic in BigInt, with the scale read from the amount string
+  rather than from `currency_decimal_places` — Firefly declares 0 to 10 places depending on currency,
+  and that field is not present on every split. No new dependency.
+
 - Vendored the Firefly III OpenAPI spec 6.5.5 under `spec/`, with its source URL, retrieval date and
   SHA-256 recorded in `spec/README.md`. The spec is the authoritative reference for every tool, and
   checking it in makes any change to it a reviewable diff rather than a silent shift in CI.

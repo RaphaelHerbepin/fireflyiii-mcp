@@ -80,8 +80,12 @@ for f in docs/reference/filtering.md AGENTS.md; do
     [ -z "$actual" ] && continue
     if [ "$documented" != "$actual" ]; then
       if [ "$FIX" = 1 ]; then
-        escaped=$(sed 's/[]\/$*.^[]/\\&/g' <<<"$line")
-        perl -pi -e "s/\Q$line\E/${line% *|*}${actual} |/" "$f" 2>/dev/null || true
+        # Replace only the trailing count cell. Rewriting the whole row is how the previous version
+        # concatenated old and new (37 + 43 = "3743") instead of substituting.
+        LINE="$line" ACTUAL="$actual" perl -i -pe '
+          BEGIN { $line = $ENV{LINE}; $actual = $ENV{ACTUAL} }
+          if ($_ eq "$line\n") { s/\|\s*\d+\s*\|\s*$/| $actual |\n/ }
+        ' "$f"
       else
         echo "✗ $f: preset '$preset' documented as $documented, actually $actual"
         fail=1

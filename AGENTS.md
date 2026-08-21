@@ -6,7 +6,7 @@
 
 Users can query their finances in natural language through Claude, getting answers about accounts, transactions, budgets, categories, bills, piggy banks, and financial insights without writing queries themselves.
 
-**Current state:** 140 tools across 14 groups, full CRUD, stdio and HTTP (OAuth or PAT) transports, tool filtering via `--preset`/`--groups`/`--read-only`.
+**Current state:** 146 tools across 15 groups, full CRUD, stdio and HTTP (OAuth or PAT) transports, tool filtering via `--preset`/`--groups`/`--read-only`.
 
 ### Architecture at a glance
 
@@ -26,7 +26,7 @@ MCP client (Claude Code / Desktop / ...)
                      │  registerAllTools (src/tools/index.ts)
                      │  · TOOL_GROUPS / PRESETS filtering, read-only proxy
                      ▼
-      Tool groups (src/tools/*.ts, 14 groups / 140 tools)
+      Tool groups (src/tools/*.ts, 15 groups / 146 tools)
         · defineTool wrapper: zod validation, error formatting (src/tools/_helpers.ts)
         · autocomplete prompts with per-user TTL cache
                      │
@@ -191,11 +191,11 @@ rules, recurring, attachments, currencies, exports, object-groups, transaction-l
 | Name | Groups | Tools |
 |------|--------|-------|
 | `minimal` | accounts, transactions | 15 |
-| `default` | accounts, transactions, budgets, categories, bills | 37 |
-| `budgeting` | accounts, transactions, budgets, categories, bills, piggy-banks | 44 |
-| `insights` | accounts, transactions, categories, reports | 57 |
+| `default` | accounts, transactions, budgets, categories, bills, aggregates | 43 |
+| `budgeting` | accounts, transactions, budgets, categories, bills, piggy-banks, aggregates | 50 |
+| `insights` | accounts, transactions, categories, reports, aggregates | 63 |
 | `automation` | accounts, transactions, rules, recurring | 37 |
-| `full` | all 14 groups | 140 |
+| `full` | all 15 groups | 146 |
 
 ### Read-only proxy
 

@@ -117,6 +117,17 @@ export const TOOL_PROJECTIONS: Record<string, ToolProjection | typeof NO_PROJECT
   get_budget_chart: NO_PROJECTION,
   get_category_chart: NO_PROJECTION,
 
+  // Aggregate tools return purpose-built totals, already as small as the answer can be. Projecting
+  // them would mean projecting a shape that has no entity behind it.
+  get_transaction_aggregate: NO_PROJECTION,
+  get_monthly_breakdown: NO_PROJECTION,
+  get_budget_performance: NO_PROJECTION,
+  get_spending_ratios: NO_PROJECTION,
+  get_account_balance_history: NO_PROJECTION,
+  // search_uncategorized projects its own rows internally when include_transactions is set, so a
+  // second projection here would apply the default over a already-compact list.
+  search_uncategorized: NO_PROJECTION,
+
   // Raw CSV text and binary content: nothing to project.
   export_transactions: NO_PROJECTION,
   export_accounts: NO_PROJECTION,
