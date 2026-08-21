@@ -57,6 +57,13 @@ retargeted, four removed:
 
 ### Added
 
+- Six link-type tools, completing that group: `get_link_type`, `get_link_type_transactions`,
+  `create_link_type`, `update_link_type`, `delete_link_type` and `get_all_transaction_links`.
+  `get_link_type_transactions` answers the question link types exist for — "show me everything marked
+  as a refund", or every instalment of a split payment — which nothing else could answer.
+  `delete_link_type` states that the links using it go too: the transactions survive, the
+  relationships between them do not.
+
 - **An `exchange-rates` tool group** (10 tools) covering both ways Firefly III addresses a rate: by
   its own ID, and by currency pair with an optional date. Both are exposed because they answer
   different questions — "change this rate" against "what was EUR/USD on the 3rd" — and collapsing one

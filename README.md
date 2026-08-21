@@ -105,7 +105,7 @@ A normal install (no tag) always resolves to the latest tagged release — `@lat
 
 ## Available Tools
 
-→ See the full [tool reference](https://raphaelherbepin.github.io/fireflyiii-mcp/reference/tools) in the docs (172 tools across 18 groups).
+→ See the full [tool reference](https://raphaelherbepin.github.io/fireflyiii-mcp/reference/tools) in the docs (178 tools across 18 groups).
 
 ---
 

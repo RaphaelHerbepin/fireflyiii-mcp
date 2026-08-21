@@ -1,6 +1,6 @@
 # Available tools
 
-172 tools across 18 groups. Use [Tool filtering](/reference/filtering) to load only what you need.
+178 tools across 18 groups. Use [Tool filtering](/reference/filtering) to load only what you need.
 
 ## Accounts
 
@@ -265,6 +265,12 @@ including reads — until a user with the owner role sets `configuration.allow_w
 | Tool | Description |
 |------|-------------|
 | `get_link_types` | List available transaction link types (Related, Refund, Paid, etc.) |
+| `get_link_type` | Get one link type, with its inward and outward phrasing |
+| `get_link_type_transactions` | Every transaction connected by one link type |
+| `create_link_type` | Create a named relationship between transactions, e.g. "Refund" |
+| `update_link_type` | Update a link type. Existing links keep working. |
+| `delete_link_type` | Delete a link type and every link using it. This action cannot be undone. |
+| `get_all_transaction_links` | Every transaction link on the instance |
 | `get_transaction_links` | Get all links attached to a transaction journal entry |
 | `get_transaction_link` | Get a single transaction link by ID |
 | `create_transaction_link` | Create a link between two transactions |

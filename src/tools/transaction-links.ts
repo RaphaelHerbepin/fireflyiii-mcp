@@ -59,6 +59,60 @@ export async function deleteTransactionLink(client: FireflyClient, id: string): 
   return { deleted: true, id };
 }
 
+/** One link type by ID. */
+export async function fetchLinkType(client: FireflyClient, id: string): Promise<UnwrappedSingle> {
+  return unwrapSingle(await client.get<JsonApiSingleResponse>(`/link-types/${id}`));
+}
+
+/**
+ * Every transaction connected by one link type.
+ *
+ * Answers "show me everything I have marked as a refund", which is the question link types exist for
+ * and which no other endpoint can answer.
+ */
+export async function fetchLinkTypeTransactions(
+  client: FireflyClient,
+  id: string,
+  params: { page?: number; limit?: number },
+): Promise<UnwrappedList> {
+  return unwrapList(
+    await client.get<JsonApiListResponse>(`/link-types/${id}/transactions`, {
+      page: params.page,
+      limit: params.limit,
+    }),
+  );
+}
+
+export async function createLinkType(
+  client: FireflyClient,
+  params: { name: string; inward: string; outward: string },
+): Promise<UnwrappedSingle> {
+  return unwrapSingle(await client.post<JsonApiSingleResponse>('/link-types', params));
+}
+
+export async function updateLinkType(
+  client: FireflyClient,
+  id: string,
+  params: { name?: string; inward?: string; outward?: string },
+): Promise<UnwrappedSingle> {
+  return unwrapSingle(await client.put<JsonApiSingleResponse>(`/link-types/${id}`, params));
+}
+
+export async function deleteLinkType(client: FireflyClient, id: string): Promise<{ deleted: true; id: string }> {
+  await client.delete(`/link-types/${id}`);
+  return { deleted: true, id };
+}
+
+/** Every transaction link on the instance, regardless of journal. */
+export async function fetchAllTransactionLinks(
+  client: FireflyClient,
+  params: { page?: number; limit?: number },
+): Promise<UnwrappedList> {
+  return unwrapList(
+    await client.get<JsonApiListResponse>('/transaction-links', { page: params.page, limit: params.limit }),
+  );
+}
+
 export function registerTransactionLinkTools(server: McpServer, client: FireflyClient): void {
   defineTool(
     server,
@@ -75,6 +129,108 @@ export function registerTransactionLinkTools(server: McpServer, client: FireflyC
     },
     ({ page, limit }) =>
       fetchLinkTypes(client, { page: page as number | undefined, limit: limit as number | undefined }),
+  );
+
+  defineTool(
+    server,
+    'get_link_type',
+    {
+      title: 'Get Link Type',
+      description: 'Get one link type by ID, with its inward and outward phrasing.',
+      inputSchema: { id: z.string().describe('Link type ID — use get_link_types to find valid IDs') },
+      annotations: READ_ANNOTATIONS,
+    },
+    ({ id }) => fetchLinkType(client, id as string),
+  );
+
+  defineTool(
+    server,
+    'get_link_type_transactions',
+    {
+      title: 'Get Transactions for a Link Type',
+      description:
+        'List every transaction connected by one link type — for example everything marked as a refund, ' +
+        'or every instalment of a split payment. This is the question link types exist to answer.',
+      inputSchema: {
+        id: z.string().describe('Link type ID — use get_link_types to find valid IDs'),
+        page: z.number().int().positive().optional().default(1).describe('Page number'),
+        limit: z.number().int().positive().max(100).optional().default(50).describe('Results per page (max 100)'),
+      },
+      annotations: READ_ANNOTATIONS,
+    },
+    ({ id, page, limit }) =>
+      fetchLinkTypeTransactions(client, id as string, {
+        page: page as number | undefined,
+        limit: limit as number | undefined,
+      }),
+  );
+
+  defineTool(
+    server,
+    'create_link_type',
+    {
+      title: 'Create Link Type',
+      description:
+        'Create a link type — a named relationship between two transactions, such as "Refund" or ' +
+        '"Instalment". The inward and outward phrases describe the relationship from each side.',
+      inputSchema: {
+        name: z.string().describe('Name of the link type, e.g. "Refund"'),
+        inward: z.string().describe('How the relationship reads from the target, e.g. "is refunded by"'),
+        outward: z.string().describe('How it reads from the source, e.g. "refunds"'),
+      },
+      annotations: WRITE_ANNOTATIONS,
+    },
+    (params) => createLinkType(client, params as { name: string; inward: string; outward: string }),
+  );
+
+  defineTool(
+    server,
+    'update_link_type',
+    {
+      title: 'Update Link Type',
+      description: 'Update a link type. Only fields provided are changed. Existing links keep working.',
+      inputSchema: {
+        id: z.string().describe('Link type ID — use get_link_types to find valid IDs'),
+        name: z.string().optional().describe('Name of the link type'),
+        inward: z.string().optional().describe('How the relationship reads from the target'),
+        outward: z.string().optional().describe('How it reads from the source'),
+      },
+      annotations: UPDATE_ANNOTATIONS,
+    },
+    ({ id, ...params }) =>
+      updateLinkType(client, id as string, params as { name?: string; inward?: string; outward?: string }),
+  );
+
+  defineTool(
+    server,
+    'delete_link_type',
+    {
+      title: 'Delete Link Type',
+      description:
+        'Permanently delete a link type. **This action cannot be undone, and every link using it is ' +
+        'removed with it** — the transactions themselves are untouched, but the relationships between ' +
+        'them are lost. Use get_link_type_transactions first to see what depends on it.',
+      inputSchema: { id: z.string().describe('Link type ID — use get_link_types to find valid IDs') },
+      annotations: DELETE_ANNOTATIONS,
+    },
+    ({ id }) => deleteLinkType(client, id as string),
+  );
+
+  defineTool(
+    server,
+    'get_all_transaction_links',
+    {
+      title: 'Get All Transaction Links',
+      description:
+        'List every transaction link on the instance. Use get_transaction_links when you only care ' +
+        'about the links on one transaction journal.',
+      inputSchema: {
+        page: z.number().int().positive().optional().default(1).describe('Page number'),
+        limit: z.number().int().positive().max(100).optional().default(50).describe('Results per page (max 100)'),
+      },
+      annotations: READ_ANNOTATIONS,
+    },
+    (params) => fetchAllTransactionLinks(client, params as { page?: number; limit?: number }),
   );
 
   defineTool(
