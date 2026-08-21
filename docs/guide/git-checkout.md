@@ -5,7 +5,7 @@ Use this setup when contributing to `fireflyiii-mcp` or running a local developm
 ## Setup
 
 ```bash
-git clone https://github.com/daften/fireflyiii-mcp.git
+git clone https://github.com/RaphaelHerbepin/fireflyiii-mcp.git
 cd fireflyiii-mcp
 npm install
 npm run build

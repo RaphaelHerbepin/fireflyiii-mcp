@@ -1,6 +1,6 @@
 services:
   fireflyiii-mcp:
-    image: ghcr.io/daften/fireflyiii-mcp:latest
+    image: ghcr.io/raphaelherbepin/fireflyiii-mcp:latest
     # build: .  # Uncomment to build locally instead of pulling from registry
     ports:
       - "3000:3000"

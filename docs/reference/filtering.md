@@ -17,7 +17,7 @@ Load a named subset of tool groups:
 
 ```bash
 node dist/index.js --preset default
-npx @daften/fireflyiii-mcp --preset budgeting
+npx @raphaelherbepin/fireflyiii-mcp --preset budgeting
 ```
 
 ## --groups \<list\>
@@ -74,5 +74,5 @@ docker run \
   -e MCP_PRESET=default \
   -e MCP_READ_ONLY=true \
   -p 3000:3000 \
-  ghcr.io/daften/fireflyiii-mcp:latest
+  ghcr.io/raphaelherbepin/fireflyiii-mcp:latest
 ```

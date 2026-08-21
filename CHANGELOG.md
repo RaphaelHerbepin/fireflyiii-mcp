@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **This repository is now a fork of [daften/fireflyiii-mcp](https://github.com/daften/fireflyiii-mcp).**
+  The npm package is published as `@raphaelherbepin/fireflyiii-mcp` and the container image as
+  `ghcr.io/raphaelherbepin/fireflyiii-mcp`. Upstream remains credited as the original author, and the
+  MIT licence and attribution are unchanged. Release, back-merge and auto-release workflows now target
+  this repository, and each is guarded by a `github.repository` check so a downstream fork can never
+  publish under this namespace by accident.
+
 ## [0.4.2] - 2026-08-04
 
 ### Security

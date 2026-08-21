@@ -1,7 +1,7 @@
 {
-  "name": "@daften/fireflyiii-mcp",
+  "name": "@raphaelherbepin/fireflyiii-mcp",
   "version": "0.4.2",
-  "description": "MCP server for Firefly III personal finance manager",
+  "description": "MCP server for Firefly III personal finance manager \u2014 fork with field projection, server-side aggregation and full API 6.5.5 coverage",
   "type": "module",
   "bin": {
     "fireflyiii-mcp": "dist/index.js"
@@ -37,7 +37,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/daften/fireflyiii-mcp.git"
+    "url": "https://github.com/RaphaelHerbepin/fireflyiii-mcp.git"
   },
   "keywords": [
     "firefly-iii",
@@ -46,10 +46,13 @@
     "model-context-protocol",
     "claude"
   ],
-  "homepage": "https://github.com/daften/fireflyiii-mcp",
-  "author": "Dieter Blomme <dieterblomme@gmail.com>",
+  "homepage": "https://github.com/RaphaelHerbepin/fireflyiii-mcp",
+  "author": "Rapha\u00ebl Herbepin",
+  "contributors": [
+    "Dieter Blomme <dieterblomme@gmail.com> (original author)"
+  ],
   "bugs": {
-    "url": "https://github.com/daften/fireflyiii-mcp/issues"
+    "url": "https://github.com/RaphaelHerbepin/fireflyiii-mcp/issues"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",

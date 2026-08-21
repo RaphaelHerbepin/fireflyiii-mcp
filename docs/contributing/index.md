@@ -3,7 +3,7 @@
 ## Clone and install
 
 ```bash
-git clone https://github.com/daften/fireflyiii-mcp.git
+git clone https://github.com/RaphaelHerbepin/fireflyiii-mcp.git
 cd fireflyiii-mcp
 npm install
 ```
@@ -55,4 +55,4 @@ Subject line ≤72 characters. No period at the end.
 
 ## Releasing a new version
 
-See [CONTRIBUTING.md](https://github.com/daften/fireflyiii-mcp/blob/main/CONTRIBUTING.md#releasing-a-new-version) in the repository for the full release process.
+See [CONTRIBUTING.md](https://github.com/RaphaelHerbepin/fireflyiii-mcp/blob/main/CONTRIBUTING.md#releasing-a-new-version) in the repository for the full release process.

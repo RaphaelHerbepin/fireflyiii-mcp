@@ -13,7 +13,7 @@ For **Claude Code** (`.claude/mcp.json`) or **Claude Desktop** (`claude_desktop_
   "mcpServers": {
     "fireflyiii": {
       "command": "npx",
-      "args": ["-y", "@daften/fireflyiii-mcp"],
+      "args": ["-y", "@raphaelherbepin/fireflyiii-mcp"],
       "env": {
         "FIREFLY_URL": "https://your-firefly-instance.example.com",
         "FIREFLY_TOKEN": "your-personal-access-token-here"
@@ -43,7 +43,7 @@ See [Tool filtering](/reference/filtering) for all preset names and group option
 ## Optional: install globally
 
 ```bash
-npm install -g @daften/fireflyiii-mcp
+npm install -g @raphaelherbepin/fireflyiii-mcp
 ```
 
-Then replace `"command": "npx", "args": ["-y", "@daften/fireflyiii-mcp"]` with `"command": "fireflyiii-mcp"`.
+Then replace `"command": "npx", "args": ["-y", "@raphaelherbepin/fireflyiii-mcp"]` with `"command": "fireflyiii-mcp"`.

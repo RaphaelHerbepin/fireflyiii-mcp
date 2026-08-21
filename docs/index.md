@@ -10,10 +10,10 @@ hero:
       link: /guide/
     - theme: alt
       text: GitHub
-      link: https://github.com/daften/fireflyiii-mcp
+      link: https://github.com/RaphaelHerbepin/fireflyiii-mcp
     - theme: alt
       text: Docker (GHCR)
-      link: https://github.com/daften/fireflyiii-mcp/pkgs/container/fireflyiii-mcp
+      link: https://github.com/RaphaelHerbepin/fireflyiii-mcp/pkgs/container/fireflyiii-mcp
 
 features:
   - icon: 🛠️
@@ -59,7 +59,7 @@ The simplest setup uses `npx` with stdio transport and a Personal Access Token (
   "mcpServers": {
     "fireflyiii": {
       "command": "npx",
-      "args": ["-y", "@daften/fireflyiii-mcp"],
+      "args": ["-y", "@raphaelherbepin/fireflyiii-mcp"],
       "env": {
         "FIREFLY_URL": "https://your-firefly-instance.example.com",
         "FIREFLY_TOKEN": "your-personal-access-token-here"

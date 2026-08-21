@@ -33,7 +33,7 @@ body:
     attributes:
       label: MCP server version
       description: The npm version, Docker tag, or git SHA you're running.
-      placeholder: e.g. 0.1.0, ghcr.io/daften/fireflyiii-mcp:0.1.0, or a7b3c2e
+      placeholder: e.g. 0.1.0, ghcr.io/raphaelherbepin/fireflyiii-mcp:0.1.0, or a7b3c2e
     validations:
       required: true
 
