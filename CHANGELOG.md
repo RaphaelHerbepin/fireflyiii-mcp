@@ -61,6 +61,11 @@ retargeted, four removed:
   headline features save, against a live instance. Its output is in the README. It prints markdown to
   stdout rather than editing the README itself: a script that rewrites documentation in CI is a script
   nobody reviews.
+- `src/tests/coverage-gaps.test.ts`: direct tests for 26 exported fetch functions that no test
+  reached. A coverage pass found them — mostly late additions in groups whose suites concentrated on
+  the tools carrying the risky logic. "The interesting parts are tested" is how a function that builds
+  the wrong URL survives to production, so each now asserts the path it builds and the shape it
+  returns. Function coverage 61% → 66%; every exported function in `src/tools/` is now exercised.
 - `src/tests/integration-fork.test.ts` checks the fork's own behaviour against a live instance —
   projection actually reduces payloads, `--read-only` keeps the tools it used to drop, and the
   aggregates match the seed manifest to the cent. Gated on `FIREFLY_SEEDED` separately from
