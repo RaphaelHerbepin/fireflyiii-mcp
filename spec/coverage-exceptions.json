@@ -11,7 +11,64 @@
     "paths": 164
   },
   "uncovered": [],
-  "phantomRoutes": [],
+  "phantomRoutes": [
+    {
+      "method": "put",
+      "path": "/v1/budget-limits/{id}",
+      "reason": "Verified absent against Firefly III 6.5.5 (API 6.5.5) on 2026-08-21 by src/tests/phantom-routes.test.ts. Returns 404. The spec's PUT /v1/budgets/{id}/limits/{limitId} returns 200 and is the replacement. update_budget_limit is broken until it is retargeted.",
+      "verifiedOn": "2026-08-21",
+      "verifiedVersion": "6.5.5",
+      "status": "broken-tool"
+    },
+    {
+      "method": "delete",
+      "path": "/v1/budget-limits/{id}",
+      "reason": "Verified absent against Firefly III 6.5.5 (API 6.5.5) on 2026-08-21 by src/tests/phantom-routes.test.ts. Returns 404. Replacement: DELETE /v1/budgets/{id}/limits/{limitId}. delete_budget_limit is broken until it is retargeted.",
+      "verifiedOn": "2026-08-21",
+      "verifiedVersion": "6.5.5",
+      "status": "broken-tool"
+    },
+    {
+      "method": "get",
+      "path": "/v1/exchange-rates/by-currencies/{from}/{to}",
+      "reason": "Verified absent against Firefly III 6.5.5 (API 6.5.5) on 2026-08-21 by src/tests/phantom-routes.test.ts. Returns 404 \u2014 that path exists for POST only. GET /v1/exchange-rates/{from}/{to} returns 200 and is the replacement. get_exchange_rate is broken until retargeted.",
+      "verifiedOn": "2026-08-21",
+      "verifiedVersion": "6.5.5",
+      "status": "broken-tool"
+    },
+    {
+      "method": "get",
+      "path": "/v1/summary/net-worth",
+      "reason": "Verified absent against Firefly III 6.5.5 (API 6.5.5) on 2026-08-21 by src/tests/phantom-routes.test.ts. Returns 404 with no parameters involved, so this is a missing route rather than a missing resource. No replacement exists; net worth must be derived from /v1/summary/basic. get_net_worth_summary should be removed.",
+      "verifiedOn": "2026-08-21",
+      "verifiedVersion": "6.5.5",
+      "status": "broken-tool"
+    },
+    {
+      "method": "post",
+      "path": "/v1/object-groups",
+      "reason": "Verified absent against Firefly III 6.5.5 (API 6.5.5) on 2026-08-21 by src/tests/phantom-routes.test.ts. Returns 405, not 404: the collection exists for GET but not for POST. Object groups are created implicitly by setting object_group_title on a piggy bank or bill. create_object_group should be removed.",
+      "verifiedOn": "2026-08-21",
+      "verifiedVersion": "6.5.5",
+      "status": "broken-tool"
+    },
+    {
+      "method": "post",
+      "path": "/v1/piggy-banks/{id}/events",
+      "reason": "Verified absent against Firefly III 6.5.5 (API 6.5.5) on 2026-08-21 by src/tests/phantom-routes.test.ts. Returns 405; GET on the same path returns 200. Piggy bank events are produced by transfers, not created directly. create_piggy_bank_event should be removed.",
+      "verifiedOn": "2026-08-21",
+      "verifiedVersion": "6.5.5",
+      "status": "broken-tool"
+    },
+    {
+      "method": "delete",
+      "path": "/v1/piggy-banks/{id}/events/{eventId}",
+      "reason": "Verified absent against Firefly III 6.5.5 (API 6.5.5) on 2026-08-21 by src/tests/phantom-routes.test.ts. Returns 404. Events are not independently deletable. delete_piggy_bank_event should be removed.",
+      "verifiedOn": "2026-08-21",
+      "verifiedVersion": "6.5.5",
+      "status": "broken-tool"
+    }
+  ],
   "baseline": {
     "uncovered": [
       "deleteBudgetLimit",
@@ -113,14 +170,6 @@
       "updateUserGroup",
       "updateWebhook"
     ],
-    "phantomRoutes": [
-      "delete /budget-limits/{p}",
-      "delete /piggy-banks/{p}/events/{p}",
-      "get /exchange-rates/by-currencies/{p}/{p}",
-      "get /summary/net-worth",
-      "post /object-groups",
-      "post /piggy-banks/{p}/events",
-      "put /budget-limits/{p}"
-    ]
+    "phantomRoutes": []
   }
 }

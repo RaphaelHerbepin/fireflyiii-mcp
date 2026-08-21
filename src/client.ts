@@ -154,8 +154,10 @@ export class FireflyClient {
     return this.request<T>('PUT', this.buildUrl(path), body);
   }
 
-  async delete(path: string): Promise<void> {
-    await this.request<void>('DELETE', this.buildUrl(path));
+  /** `params` is needed by endpoints such as `DELETE /data/destroy`, which takes a required `objects`
+   *  query parameter. Optional, so existing call sites are unaffected. */
+  async delete(path: string, params?: QueryParams): Promise<void> {
+    await this.request<void>('DELETE', this.buildUrl(path, params));
   }
 
   async postBinary(path: string, body: Uint8Array): Promise<void> {

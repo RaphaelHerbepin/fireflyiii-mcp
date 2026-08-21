@@ -8,7 +8,8 @@
 #   3. Copy a PHP bootstrap script into the container and execute it.
 set -euo pipefail
 
-CONTAINER=fireflyiii-ci
+# Overridable so the dev stack (docker-compose.dev.yml) can reuse this script unchanged.
+CONTAINER=${CONTAINER:-fireflyiii-ci}
 FIREFLY_URL=${1:-http://localhost:8080}
 
 # Wait for the /healthcheck endpoint (up to 6 minutes).
