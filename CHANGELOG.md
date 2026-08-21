@@ -57,6 +57,20 @@ retargeted, four removed:
 
 ### Added
 
+- **A `webhooks` tool group** (13 tools): create, read, update and delete webhooks, inspect the
+  messages they queue and each delivery attempt, flush the queue, and replay one transaction through
+  a webhook. Included in the `automation` preset.
+
+  Two things a live instance settled that the spec could not. The payload uses **plural** `triggers`,
+  `responses` and `deliveries`; the spec's `required` block names them in the singular and Firefly
+  rejects that form outright. And updates replace rather than patch — all three must be supplied even
+  to toggle `active` — so the tool schema requires them instead of letting callers hit an
+  unpredictable 422.
+
+  Webhooks are **disabled by default**, and every route answers 404 until
+  `configuration.allow_webhooks` is switched on by a user with the owner role. A 404 meaning "switched
+  off" rather than "not supported" is easy to misread, so the tool descriptions say so.
+
 - **`search_entities`**, one tool over Firefly III's seventeen `/autocomplete/*` endpoints. Resolving
   "Coopérative U" to an account ID costs 602 characters instead of listing every account. Exposing
   seventeen separate tools would have spent seventeen tool definitions in every `tools/list` response

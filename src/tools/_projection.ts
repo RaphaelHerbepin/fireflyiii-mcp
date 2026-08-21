@@ -133,6 +133,14 @@ export const TOOL_PROJECTIONS: Record<string, ToolProjection | typeof NO_PROJECT
   // second projection here would apply the default over a already-compact list.
   search_uncategorized: NO_PROJECTION,
 
+  // Webhook records are small and their fields all matter when debugging a delivery.
+  get_webhooks: NO_PROJECTION,
+  get_webhook: NO_PROJECTION,
+  get_webhook_messages: NO_PROJECTION,
+  get_webhook_message: NO_PROJECTION,
+  get_webhook_message_attempts: NO_PROJECTION,
+  get_webhook_message_attempt: NO_PROJECTION,
+
   // Raw CSV text and binary content: nothing to project.
   export_transactions: NO_PROJECTION,
   export_accounts: NO_PROJECTION,

@@ -54,6 +54,10 @@ services:
       LOG_CHANNEL: stderr
       SEND_ERROR_MESSAGE: 'false'
       SEND_REGISTRATION_MAIL: 'false'
+      # Webhooks are off by default in Firefly III. Without this the whole /webhooks surface answers
+      # 404 — including GET — which reads as "this version has no webhooks" rather than "they are
+      # switched off". Enabled here so the webhook tools can be exercised against the dev stack.
+      ALLOW_WEBHOOKS: 'true'
     ports:
       - '8080:8080'
     volumes:

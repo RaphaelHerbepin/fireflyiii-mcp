@@ -1,6 +1,6 @@
 # Available tools
 
-147 tools across 16 groups. Use [Tool filtering](/reference/filtering) to load only what you need.
+160 tools across 17 groups. Use [Tool filtering](/reference/filtering) to load only what you need.
 
 ## Accounts
 
@@ -183,6 +183,27 @@ in decimal arithmetic, and multiple currencies are reported separately rather th
 | `get_insight_transfers_by_tag` | Transfer insights grouped by tag |
 | `get_insight_transfers_by_asset` | Transfer insights grouped by asset account |
 | `get_insight_transfers_total` | Total transfer amount for a date range |
+
+## Webhooks
+
+Firefly III calling out to a URL you choose. **Disabled by default**: every route here answers 404 —
+including reads — until a user with the owner role sets `configuration.allow_webhooks` to true.
+
+| Tool | Description |
+|------|-------------|
+| `get_webhooks` | List configured webhooks |
+| `get_webhook` | Get one webhook, with its triggers, response type and secret |
+| `create_webhook` | Create a webhook. The URL will receive your transaction data. |
+| `update_webhook` | Replace a webhook. Triggers, responses and deliveries must all be supplied. |
+| `delete_webhook` | Delete a webhook and its message history. This action cannot be undone. |
+| `get_webhook_messages` | Messages a webhook has queued or sent |
+| `get_webhook_message` | One message, with the payload sent |
+| `delete_webhook_message` | Delete a message and its attempts. This action cannot be undone. |
+| `get_webhook_message_attempts` | Delivery attempts for a message, with their responses |
+| `get_webhook_message_attempt` | One delivery attempt in detail |
+| `delete_webhook_message_attempt` | Delete an attempt record. This action cannot be undone. |
+| `submit_webhook` | Send every queued message now |
+| `trigger_transaction_webhook` | Replay one transaction through a webhook |
 
 ## Currencies
 

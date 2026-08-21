@@ -16,6 +16,7 @@ import { registerRuleTools } from './rules.js';
 import { registerSearchTools } from './search.js';
 import { registerTransactionLinkTools } from './transaction-links.js';
 import { registerTransactionTools } from './transactions.js';
+import { registerWebhookTools } from './webhooks.js';
 
 export const TOOL_GROUPS = [
   'accounts',
@@ -34,6 +35,7 @@ export const TOOL_GROUPS = [
   'exports',
   'object-groups',
   'transaction-links',
+  'webhooks',
 ] as const;
 
 export type ToolGroup = (typeof TOOL_GROUPS)[number];
@@ -43,7 +45,7 @@ export const PRESETS: Record<string, ToolGroup[]> = {
   default: ['search', 'accounts', 'transactions', 'budgets', 'categories', 'bills', 'aggregates'],
   budgeting: ['search', 'accounts', 'transactions', 'budgets', 'categories', 'bills', 'piggy-banks', 'aggregates'],
   insights: ['search', 'accounts', 'transactions', 'categories', 'reports', 'aggregates'],
-  automation: ['search', 'accounts', 'transactions', 'rules', 'recurring'],
+  automation: ['search', 'accounts', 'transactions', 'rules', 'recurring', 'webhooks'],
   full: [...TOOL_GROUPS],
 };
 
@@ -140,6 +142,7 @@ export function registerAllTools(server: McpServer, client: FireflyClient, optio
 
   if (activeGroups.has('accounts')) registerAccountTools(s, client);
   if (activeGroups.has('search')) registerSearchTools(s, client);
+  if (activeGroups.has('webhooks')) registerWebhookTools(s, client);
   if (activeGroups.has('aggregates')) registerAggregateTools(s, client);
   if (activeGroups.has('transactions')) registerTransactionTools(s, client);
   if (activeGroups.has('budgets')) registerBudgetTools(s, client);
