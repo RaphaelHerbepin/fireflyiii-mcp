@@ -5,13 +5,15 @@ import { makeReadOnlyProxy, PRESETS, registerAllTools, TOOL_GROUPS } from '../to
 
 function createMockServer() {
   const registered: string[] = [];
+  const toolConfigs = new Map<string, unknown>();
   const server = {
-    registerTool: vi.fn((name: string) => {
+    registerTool: vi.fn((name: string, config: unknown) => {
       registered.push(name);
+      toolConfigs.set(name, config);
     }),
     registerPrompt: vi.fn(),
   } as unknown as McpServer;
-  return { server, registered };
+  return { server, registered, toolConfigs };
 }
 
 const mockClient = {} as FireflyClient;
@@ -139,7 +141,7 @@ describe('registerAllTools — groups', () => {
 
 describe('registerAllTools — readOnly', () => {
   it('filters out all write tools (no options + readOnly)', () => {
-    const { server, registered } = createMockServer();
+    const { server, registered, toolConfigs } = createMockServer();
     registerAllTools(server, mockClient, { readOnly: true });
     // Read tools are present
     expect(registered).toContain('get_accounts');
@@ -153,12 +155,14 @@ describe('registerAllTools — readOnly', () => {
     expect(registered).not.toContain('trigger_rule');
     expect(registered).not.toContain('trigger_rule_group');
     expect(registered).not.toContain('upload_attachment');
-    // Every registered tool must be a read tool
+    // Read tools whose names match no prefix are kept: the filter reads annotations now, not names.
+    expect(registered).toContain('export_transactions');
+    expect(registered).toContain('download_attachment');
+    // Every registered tool must declare itself read-only. Asserting on the annotation rather than
+    // on the name is the point of the change: the name is a convention, the annotation is the claim.
     for (const name of registered) {
-      expect(
-        name.startsWith('get_') || name.startsWith('search_') || name.startsWith('test_'),
-        `"${name}" should not be registered in readOnly mode`,
-      ).toBe(true);
+      const config = toolConfigs.get(name) as { annotations?: { readOnlyHint?: boolean } };
+      expect(config?.annotations?.readOnlyHint, `"${name}" is registered but does not declare readOnlyHint`).toBe(true);
     }
   });
 

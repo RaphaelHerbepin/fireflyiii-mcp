@@ -473,7 +473,7 @@ export function registerRuleTools(server: McpServer, client: FireflyClient): voi
         end: dateSchema.optional().describe('Filter transactions to this date (YYYY-MM-DD)'),
         accounts: z.array(z.number().int().positive()).optional().describe('Limit to these account IDs'),
       },
-      annotations: { openWorldHint: true },
+      annotations: WRITE_ANNOTATIONS,
     },
     ({ id, start, end, accounts }) =>
       triggerRuleGroup(client, id as string, {
@@ -495,7 +495,7 @@ export function registerRuleTools(server: McpServer, client: FireflyClient): voi
         end: dateSchema.optional().describe('Filter transactions to this date (YYYY-MM-DD)'),
         accounts: z.array(z.number().int().positive()).optional().describe('Limit to these account IDs'),
       },
-      annotations: { openWorldHint: true },
+      annotations: WRITE_ANNOTATIONS,
     },
     ({ id, start, end, accounts }) =>
       triggerRule(client, id as string, {

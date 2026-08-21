@@ -39,7 +39,13 @@ export const CLIENT_METHODS: Record<string, string> = {
  * Functions that legitimately take a route as a parameter. Their routes come from exported tables the
  * coverage script expands; listing a name here asserts that such a table exists and is expanded.
  */
-export const TABLE_DRIVEN_HELPERS = new Set(['fetchChart', 'fetchInsightNoX', 'fetchInsightGrouped', 'exportEntity']);
+export const TABLE_DRIVEN_HELPERS = new Set([
+  'fetchChart',
+  'fetchInsightNoX',
+  'fetchInsightGrouped',
+  'exportEntity',
+  'collectSplits',
+]);
 
 export interface ScannedRoute {
   method: string;
@@ -102,14 +108,75 @@ export function routeFromArgumentText(text: string): string | null {
   return null;
 }
 
-/** Name of the function enclosing `index`, based on the nearest preceding declaration. */
-function enclosingFunctionName(src: string, index: number): string | null {
-  const head = src.slice(0, index);
+/** Index of the `(` opening a parameter list at or after `from`. */
+function paramListStart(src: string, from: number): number {
+  return src.indexOf('(', from);
+}
+
+/**
+ * Index just past the body of the function whose declaration starts at `declStart`, or -1.
+ *
+ * The body brace is located after the parameter list closes, not by taking the first `{` — a
+ * signature like `options: { maxPages?: number } = {}` puts a brace inside the parameters, and
+ * matching from there measures the wrong span entirely.
+ */
+function bodyEnd(src: string, declStart: number): number {
+  const paramOpen = paramListStart(src, declStart);
+  if (paramOpen === -1) return -1;
+
+  let parenDepth = 0;
+  let cursor = paramOpen;
+  for (; cursor < src.length; cursor++) {
+    if (src[cursor] === '(') parenDepth++;
+    else if (src[cursor] === ')') {
+      parenDepth--;
+      if (parenDepth === 0) break;
+    }
+  }
+
+  const open = src.indexOf('{', cursor);
+  if (open === -1) return -1;
+  let depth = 0;
+  let quote: string | null = null;
+  for (let i = open; i < src.length; i++) {
+    const ch = src[i];
+    if (quote) {
+      if (ch === '\\') i++;
+      else if (ch === quote) quote = null;
+      continue;
+    }
+    if (ch === "'" || ch === '"' || ch === '`') {
+      quote = ch;
+      continue;
+    }
+    if (ch === '{') depth++;
+    else if (ch === '}') {
+      depth--;
+      if (depth === 0) return i;
+    }
+  }
+  return -1;
+}
+
+/**
+ * Names of the functions whose bodies actually contain `index`.
+ *
+ * Bounded by brace matching rather than by "the nearest declaration above", which is wrong in two
+ * directions: a call after a locally-declared closure gets blamed on that closure, and every call
+ * later in a file gets attributed to whichever function was declared last. The second one is worse —
+ * it silently suppresses real routes, which is exactly the false-negative this scanner exists to
+ * avoid. Callers check whether any *containing* function is declared table-driven.
+ */
+function enclosingFunctionNames(src: string, index: number): string[] {
   const decl =
     /(?:function\s+([A-Za-z0-9_$]+)\s*\(|(?:const|let|var)\s+([A-Za-z0-9_$]+)\s*=\s*(?:async\s*)?(?:\(|function))/g;
-  let name: string | null = null;
-  for (let m = decl.exec(head); m; m = decl.exec(head)) name = m[1] ?? m[2];
-  return name;
+  const names: string[] = [];
+  for (let m = decl.exec(src); m; m = decl.exec(src)) {
+    if (m.index > index) break;
+    const end = bodyEnd(src, m.index);
+    if (end > index) names.push(m[1] ?? m[2]);
+  }
+  return names;
 }
 
 export function scanSource(filePath: string, src: string): ScanResult {
@@ -126,11 +193,11 @@ export function scanSource(filePath: string, src: string): ScanResult {
     const arg = firstArgument(src, open);
     if (arg === null) continue;
 
-    const fn = enclosingFunctionName(src, m.index);
     // Inside a table-driven helper the table is authoritative, whether or not the literal happens to
     // be readable. `exportEntity` interpolates the entity into `/data/export/${entity}`: reading that
     // as one route would both miss the nine real paths and look like a route the spec never defines.
-    if (fn && TABLE_DRIVEN_HELPERS.has(fn)) continue;
+    const enclosing = enclosingFunctionNames(src, m.index);
+    if (enclosing.some((fn) => TABLE_DRIVEN_HELPERS.has(fn))) continue;
 
     const route = routeFromArgumentText(arg);
     if (route !== null) {

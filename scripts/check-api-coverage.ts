@@ -14,6 +14,7 @@
 
 import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { COLLECT_SPLITS_ROUTES } from '../src/tools/aggregates.js';
 import { EXPORT_TOOLS } from '../src/tools/exports.js';
 import { CHART_ENDPOINTS, INSIGHT_GROUPED_TOOLS, INSIGHT_NO_X_TOOLS } from '../src/tools/reports.js';
 import { parseSpecOperationsChecked, type SpecOperation, toClientRoute } from './lib/parse-spec.js';
@@ -55,6 +56,7 @@ function tableDrivenRoutes(): string[] {
     ...INSIGHT_GROUPED_TOOLS.map((t) => `get ${t.endpoint}`),
     ...INSIGHT_NO_X_TOOLS.map((t) => `get ${t.endpoint}`),
     ...EXPORT_TOOLS.map((t) => `get /data/export/${t.entity}`),
+    ...COLLECT_SPLITS_ROUTES.map((route) => `get ${route}`),
   ];
 }
 

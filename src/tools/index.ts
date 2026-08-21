@@ -53,19 +53,71 @@ export interface ToolFilterOptions {
   readOnly?: boolean;
 }
 
-function isReadOnlyTool(name: string): boolean {
-  return name.startsWith('get_') || name.startsWith('search_') || name.startsWith('test_');
+/**
+ * Prompts that survive `--read-only`.
+ *
+ * An allow-list rather than a rule, and closed by default: a prompt not named here is dropped. All
+ * three of today's prompts only read, but the proxy used to intercept `registerTool` alone, so a
+ * future prompt that wrote would have passed straight through a read-only server. Adding a name here
+ * is a deliberate decision; forgetting to is the safe failure.
+ */
+export const READ_ONLY_PROMPTS: ReadonlySet<string> = new Set([
+  'account-transactions',
+  'budget-transactions',
+  'category-transactions',
+]);
+
+/**
+ * Reads a tool's read-only status from its annotations.
+ *
+ * This used to be inferred from the tool's name — `get_`, `search_` or `test_` — which silently
+ * dropped all nine `export_*` tools and `download_attachment` from every read-only server, despite
+ * all ten carrying READ_ANNOTATIONS. Inferring a security property from a naming convention fails in
+ * both directions: a read tool named unconventionally disappears, and a write tool named `get_…`
+ * would sail through.
+ *
+ * A missing hint throws rather than defaulting. Defaulting to false hides a read tool; defaulting to
+ * true exposes a write one. Both are silent, and one of them is a security bug — so neither is an
+ * acceptable guess. `defineTool` requires annotations at the type level, so this can only fire for a
+ * tool registered outside it.
+ */
+function isReadOnlyTool(name: string, config: unknown): boolean {
+  const hint = (config as { annotations?: { readOnlyHint?: boolean } } | undefined)?.annotations?.readOnlyHint;
+  if (typeof hint !== 'boolean') {
+    throw new Error(
+      `Tool "${name}" declares no annotations.readOnlyHint, so it cannot be classified for --read-only. ` +
+        'Use one of READ_/WRITE_/UPDATE_/DELETE_ANNOTATIONS from src/tools/_annotations.ts.',
+    );
+  }
+  return hint;
 }
+
+/** A registration handle that does nothing, returned in place of the SDK's when a tool is dropped. */
+const INERT_REGISTRATION = {
+  enable: () => {},
+  disable: () => {},
+  remove: () => {},
+  update: () => {},
+};
 
 export function makeReadOnlyProxy(server: McpServer): McpServer {
   return new Proxy(server, {
     get(target, prop) {
       if (prop === 'registerTool') {
         return (name: string, config: unknown, handler: unknown) => {
-          if (isReadOnlyTool(name)) {
-            (target.registerTool as (n: string, c: unknown, h: unknown) => void)(name, config, handler);
-          }
+          if (!isReadOnlyTool(name, config)) return INERT_REGISTRATION;
+          return (target.registerTool as (n: string, c: unknown, h: unknown) => unknown)(name, config, handler);
         };
+      }
+      if (prop === 'registerPrompt') {
+        return (name: string, config: unknown, handler: unknown) => {
+          if (!READ_ONLY_PROMPTS.has(name)) return INERT_REGISTRATION;
+          return (target.registerPrompt as (n: string, c: unknown, h: unknown) => unknown)(name, config, handler);
+        };
+      }
+      if (prop === 'registerResource') {
+        // No resources today. Closing the category costs one branch and removes a future gap.
+        return () => INERT_REGISTRATION;
       }
       const v = (target as unknown as Record<string | symbol, unknown>)[prop];
       return typeof v === 'function' ? (v as (...args: unknown[]) => unknown).bind(target) : v;

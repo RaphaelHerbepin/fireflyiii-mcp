@@ -41,6 +41,17 @@ export const MAX_AGGREGATE_PAGES = 50;
 
 const AGGREGATE_PAGE_SIZE = 100;
 
+/**
+ * Transaction listings `collectSplits` walks.
+ *
+ * It takes its path as a parameter, so scripts/check-api-coverage.ts cannot see which routes it
+ * reaches — and refuses to guess. Declaring them here keeps the coverage report honest and makes tsc
+ * responsible for keeping the list in step with the call sites.
+ */
+export const COLLECT_SPLITS_ROUTES = ['/transactions', '/budgets/transactions-without-budget'] as const;
+
+type CollectSplitsRoute = (typeof COLLECT_SPLITS_ROUTES)[number];
+
 export class AggregateRangeTooLargeError extends Error {
   constructor(totalPages: number, total: number) {
     super(
@@ -108,7 +119,7 @@ function toSplitRow(groupId: string, split: Record<string, unknown>): SplitRow {
  */
 export async function collectSplits(
   client: FireflyClient,
-  path: string,
+  path: CollectSplitsRoute,
   query: QueryParams,
   options: { maxPages?: number } = {},
 ): Promise<SplitRow[]> {

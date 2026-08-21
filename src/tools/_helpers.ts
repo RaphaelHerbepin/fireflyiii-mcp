@@ -4,6 +4,7 @@ import { formatError } from '../client.js';
 import { debugLog } from '../debug.js';
 import { projectItem, projectUnwrappedList } from '../projection.js';
 import type { FieldSelector, UnwrappedList, UnwrappedSingle } from '../transform.js';
+import type { ToolAnnotations } from './_annotations.js';
 import { NO_PROJECTION, TOOL_PROJECTIONS } from './_projection.js';
 
 // Re-exported so the thirteen existing call sites keep importing it from here.
@@ -13,12 +14,12 @@ type ToolConfig = {
   title?: string;
   description?: string;
   inputSchema?: Record<string, z.ZodTypeAny>;
-  annotations?: {
-    readOnlyHint?: boolean;
-    destructiveHint?: boolean;
-    idempotentHint?: boolean;
-    openWorldHint?: boolean;
-  };
+  /**
+   * Required, not optional. The read-only filter reads `readOnlyHint` from here, so an unannotated
+   * tool has no safety classification at all — and tsc is a better place to discover that than a
+   * production server quietly exposing a write tool to a read-only client.
+   */
+  annotations: ToolAnnotations;
 };
 
 /**

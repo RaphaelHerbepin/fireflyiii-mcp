@@ -93,3 +93,63 @@ describe('scanSource', () => {
     expect(routes[0].line).toBe(3);
   });
 });
+
+describe('scanSource — enclosing function detection', () => {
+  it('does not attribute a call to a closure declared earlier in the same function', () => {
+    // collectSplits declares an `absorb` helper before its second client.get. Blaming `absorb` would
+    // report a route the enclosing function had already declared as table-driven.
+    const src = `
+      export async function collectSplits(client: FireflyClient, path: Route) {
+        const first = await client.get(path, { page: 1 });
+        const absorb = (r: unknown): void => { rows.push(r); };
+        absorb(await client.get(path, { page: 2 }));
+      }
+    `;
+    expect(scanSource('t.ts', src).unresolved).toEqual([]);
+  });
+
+  it('finds the body brace past a parameter list containing an inline object type', () => {
+    // `options: { maxPages?: number } = {}` puts a brace inside the signature. Matching from the
+    // first `{` measures the wrong span and loses the function entirely.
+    const src = `
+      export async function collectSplits(client: C, path: Route, options: { maxPages?: number } = {}) {
+        return client.get(path, {});
+      }
+    `;
+    expect(scanSource('t.ts', src).unresolved).toEqual([]);
+  });
+
+  it('still reports a dynamic route in a function that is not table-driven', () => {
+    // The regression guard for the fix above: broadening enclosure must not suppress real findings.
+    const src = `
+      export async function collectSplits(client: C, path: Route) {
+        return client.get(path, {});
+      }
+      export async function somethingElse(client: C, endpoint: string) {
+        return client.get(endpoint, {});
+      }
+    `;
+    const { unresolved } = scanSource('t.ts', src);
+    expect(unresolved).toHaveLength(1);
+    expect(unresolved[0].line).toBe(6);
+  });
+
+  it('does not suppress literal routes declared after a table-driven function', () => {
+    // Attributing every later call to the last declaration seen would silently drop these, which is
+    // the false negative this scanner exists to prevent.
+    const src = `
+      export async function exportEntity(client: C, entity: string) {
+        return client.getText(\`/data/export/\${entity}\`, {});
+      }
+      export async function fetchAbout(client: C) {
+        return client.get('/about');
+      }
+      export async function fetchTags(client: C) {
+        return client.get('/tags');
+      }
+    `;
+    const { routes, unresolved } = scanSource('t.ts', src);
+    expect(unresolved).toEqual([]);
+    expect(routes.map((r) => r.route)).toEqual(['/about', '/tags']);
+  });
+});

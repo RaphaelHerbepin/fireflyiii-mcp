@@ -65,6 +65,13 @@ longer accepts. Each is recorded with its verdict in `spec/coverage-exceptions.j
   tokens**, where fifty raw transactions cost ~41 000. Figures match the generator's own totals to the
   cent across 1 998 splits.
 
+- `src/redact.ts`, applied to everything `debugLog` writes. Masking is by key name first and pattern
+  second: a regex broad enough to catch account numbers by shape also eats transaction ids and
+  amounts, which makes debug output useless. Patterns are reserved for values embedded in free text —
+  IBANs, JWTs and bearer credentials in an error message or URL.
+- Startup warnings on the HTTP transport: whether write tools are enabled, that the server performs
+  no authentication of its own (off-loopback only, so local runs stay quiet), and whether the
+  irreversible admin tools are loaded.
 - `src/money.ts`: exact decimal arithmetic in BigInt, with the scale read from the amount string
   rather than from `currency_decimal_places` — Firefly declares 0 to 10 places depending on currency,
   and that field is not present on every split. No new dependency.
@@ -111,6 +118,22 @@ longer accepts. Each is recorded with its verdict in `spec/coverage-exceptions.j
 
 ### Fixed
 
+- **`--read-only` no longer drops ten read-only tools.** The filter inferred safety from the tool's
+  name — `get_`, `search_`, `test_` — so all nine `export_*` tools and `download_attachment` were
+  removed from every read-only server despite carrying `READ_ANNOTATIONS`. It now reads
+  `annotations.readOnlyHint`, which every tool already declared. A tool with no hint throws at
+  registration rather than being guessed either way: defaulting to false hides a read tool,
+  defaulting to true exposes a write one, and both fail silently.
+- `trigger_rule` and `trigger_rule_group` declared bare `{ openWorldHint: true }` annotations with no
+  `readOnlyHint`. They apply rule actions to real transactions; they are now `WRITE_ANNOTATIONS`.
+  Their names happened to keep them out of read-only mode, but nothing said they wrote.
+- `--read-only` now filters prompts and resources too, against a closed allow-list. The proxy
+  intercepted `registerTool` only, so a prompt that wrote would have passed straight through.
+- Timeout errors no longer leak the query string. The message interpolated the full URL, so a timeout
+  on `search_accounts?query=<IBAN>` wrote that IBAN to stderr — while `FireflyError` had been
+  stripping query strings all along. Timeouts are now `FireflyTimeoutError` and strip it too.
+- `403` and `429` responses carry an actionable message instead of falling through to `API error N.`
+  The admin endpoints return 403 routinely on an ordinary token.
 - `FireflyClient.delete` accepts query parameters. `DELETE /data/destroy` requires an `objects`
   parameter that the spec documents nowhere — the instance returns 422 without it.
 
