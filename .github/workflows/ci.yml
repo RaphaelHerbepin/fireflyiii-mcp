@@ -96,6 +96,9 @@ jobs:
       - name: API coverage against spec 6.5.5
         run: npx tsx scripts/check-api-coverage.ts
 
+      - name: Tool counts and documentation counters
+        run: bash scripts/check-tool-counts.sh
+
   # Relative audit: a PR may not introduce moderate+ advisories that its base
   # doesn't already have. Deliberately NOT absolute — when several security
   # advisories are open at once, each fix-PR would fail an absolute audit
