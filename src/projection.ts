@@ -11,7 +11,7 @@
  * fields. Projection is what turns "list my January transactions" from impossible into routine.
  */
 
-import { debugLog } from './tools/_helpers.js';
+import { debugLog } from './debug.js';
 import { type FieldPreset, type FieldSelector, pickFields, pickFieldsList, type UnwrappedList } from './transform.js';
 
 export class UnknownFieldPresetError extends Error {

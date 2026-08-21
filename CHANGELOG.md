@@ -26,6 +26,27 @@ longer accepts. Each is recorded with its verdict in `spec/coverage-exceptions.j
   currency. The spec is self-contradictory here — it lists `account_id` as required but never declares
   it as a property — which is why this was settled against a live instance rather than from the spec.
 
+### Changed — BREAKING
+
+- **Read tools now return a reduced set of fields by default.** `get_transactions` and the other list
+  tools default to `fields: "compact"`; single-item reads such as `get_transaction` default to
+  `"standard"`. Pass `fields: "full"` for the previous behaviour, or an explicit array of field names.
+  `id` is always included.
+
+  This is a deliberate break, and the reason the fork exists. Measured against a live Firefly III
+  6.5.5 instance, fifty transactions cost ~41 200 tokens because each split carries 77 fields — of
+  which sixteen are `sepa_*` and ten restate the amount in another currency. The same fifty
+  transactions cost ~5 000 tokens compact: **79% smaller through the tool handler, 88% against the
+  raw payload.** A transaction goes from ~823 tokens to ~100. Analysing a full history stops being
+  impossible.
+
+  Affected tools are listed in `src/tools/_projection.ts`. Tools returning fixed-size payloads,
+  aggregate shapes, CSV or binary content are untouched.
+
+- Oversized list responses are truncated with a structured `truncated` notice giving the number
+  returned, the number omitted, and how to get the rest. A silently truncated result is worse than an
+  error: the caller concludes on partial data believing it has everything.
+
 ### Added
 
 - Vendored the Firefly III OpenAPI spec 6.5.5 under `spec/`, with its source URL, retrieval date and
