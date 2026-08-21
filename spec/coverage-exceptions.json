@@ -23,19 +23,7 @@
   ],
   "phantomRoutes": [],
   "baseline": {
-    "uncovered": [
-      "deleteTransactionJournal",
-      "getBill",
-      "getCategory",
-      "getPiggyBank",
-      "getTag",
-      "getTransactionByJournal",
-      "listEventByTransaction",
-      "listPiggyBankByAccount",
-      "listRuleByBill",
-      "storeCurrencyExchangeRatesByDate",
-      "storeCurrencyExchangeRatesByPair"
-    ],
+    "uncovered": [],
     "phantomRoutes": []
   }
 }
