@@ -12,15 +12,7 @@ import {
 import type { QueryParams } from '../types.js';
 import { DELETE_ANNOTATIONS, READ_ANNOTATIONS, UPDATE_ANNOTATIONS, WRITE_ANNOTATIONS } from './_annotations.js';
 import { withEntityCompletion } from './_completions.js';
-import {
-  AUTOCOMPLETE_FETCH_LIMIT,
-  AUTOCOMPLETE_MAX_SUGGESTIONS,
-  createTtlCache,
-  dateSchema,
-  debugLog,
-  defineTool,
-  parseId,
-} from './_helpers.js';
+import { AUTOCOMPLETE_FETCH_LIMIT, createTtlCache, dateSchema, defineTool, parseId } from './_helpers.js';
 
 export async function fetchCategories(
   client: FireflyClient,
