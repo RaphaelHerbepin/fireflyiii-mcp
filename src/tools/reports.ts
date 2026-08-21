@@ -148,17 +148,6 @@ export async function fetchAbout(client: FireflyClient): Promise<unknown> {
   return client.get('/about');
 }
 
-export async function fetchNetWorth(
-  client: FireflyClient,
-  start: string,
-  end: string,
-  currencyCode?: string,
-): Promise<unknown> {
-  const query: QueryParams = { start, end };
-  if (currencyCode) query.currency_code = currencyCode;
-  return client.get('/summary/net-worth', query);
-}
-
 export async function fetchChart(
   client: FireflyClient,
   endpoint: string,
@@ -176,7 +165,9 @@ export async function fetchExchangeRate(
 ): Promise<unknown> {
   const query: QueryParams = {};
   if (date) query.date = date;
-  return client.get(`/exchange-rates/by-currencies/${encodeURIComponent(from)}/${encodeURIComponent(to)}`, query);
+  // /exchange-rates/by-currencies/{from}/{to} exists for POST only; a GET there returns 404 on 6.5.5.
+  // The read path is /exchange-rates/{from}/{to}. Verified in src/tests/phantom-routes.test.ts.
+  return client.get(`/exchange-rates/${encodeURIComponent(from)}/${encodeURIComponent(to)}`, query);
 }
 
 export async function fetchInsightGrouped(
@@ -504,24 +495,6 @@ export function registerReportTools(server: McpServer, client: FireflyClient): v
       annotations: READ_ANNOTATIONS,
     },
     () => fetchAbout(client),
-  );
-
-  defineTool(
-    server,
-    'get_net_worth_summary',
-    {
-      title: 'Get Net Worth Summary',
-      description:
-        'Get net worth over a date range, broken down by currency. Both start and end dates (YYYY-MM-DD) are required.',
-      inputSchema: {
-        start: dateSchema.describe('Start date (YYYY-MM-DD)'),
-        end: dateSchema.describe('End date (YYYY-MM-DD)'),
-        currency_code: z.string().optional().describe('Filter by currency code (e.g. EUR, USD)'),
-      },
-      annotations: READ_ANNOTATIONS,
-    },
-    ({ start, end, currency_code }) =>
-      fetchNetWorth(client, start as string, end as string, currency_code as string | undefined),
   );
 
   for (const [name, { title, description, endpoint }] of Object.entries(CHART_ENDPOINTS)) {

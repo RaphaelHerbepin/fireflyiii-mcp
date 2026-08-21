@@ -2,9 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { FireflyClient } from '../client.js';
 import {
   createPiggyBank,
-  createPiggyBankEvent,
   deletePiggyBank,
-  deletePiggyBankEvent,
   fetchPiggyBankEvents,
   fetchPiggyBanks,
   registerPiggyBankTools,
@@ -56,10 +54,25 @@ const piggyBankSingleFixture = {
 };
 
 describe('createPiggyBank', () => {
-  it('posts to /piggy-banks', async () => {
+  it('sends accounts[] and a currency, which 6.5.5 requires', async () => {
+    // Sending a bare account_id gets 422 from a real 6.5.5 instance: the spec lists it as required
+    // but never declares it as a property, and the instance settles it. See phantom-routes.test.ts.
     mockClient.post = vi.fn().mockResolvedValueOnce(piggyBankSingleFixture);
     await createPiggyBank(mockClient, { name: 'Vacation', account_id: '1' });
-    expect(mockClient.post).toHaveBeenCalledWith('/piggy-banks', { name: 'Vacation', account_id: '1' });
+    expect(mockClient.post).toHaveBeenCalledWith('/piggy-banks', {
+      name: 'Vacation',
+      accounts: [{ account_id: '1' }],
+      transaction_currency_code: 'EUR',
+    });
+  });
+
+  it('passes an explicit currency through', async () => {
+    mockClient.post = vi.fn().mockResolvedValueOnce(piggyBankSingleFixture);
+    await createPiggyBank(mockClient, { name: 'Vacation', account_id: '1', currency_code: 'USD' });
+    expect(mockClient.post).toHaveBeenCalledWith(
+      '/piggy-banks',
+      expect.objectContaining({ transaction_currency_code: 'USD' }),
+    );
   });
   it('returns unwrapped single', async () => {
     mockClient.post = vi.fn().mockResolvedValueOnce(piggyBankSingleFixture);
@@ -98,23 +111,6 @@ describe('fetchPiggyBankEvents', () => {
     mockClient.get = vi.fn().mockResolvedValueOnce(piggyEventFixture);
     await fetchPiggyBankEvents(mockClient, '3', { page: 1, limit: 50 });
     expect(mockClient.get).toHaveBeenCalledWith('/piggy-banks/3/events', { page: 1, limit: 50 });
-  });
-});
-
-describe('createPiggyBankEvent', () => {
-  it('posts to /piggy-banks/:id/events', async () => {
-    mockClient.post = vi.fn().mockResolvedValueOnce(piggyEventSingle);
-    await createPiggyBankEvent(mockClient, '3', { amount: '50.00', date: '2026-01-20' });
-    expect(mockClient.post).toHaveBeenCalledWith('/piggy-banks/3/events', { amount: '50.00', date: '2026-01-20' });
-  });
-});
-
-describe('deletePiggyBankEvent', () => {
-  it('calls delete and returns confirmation', async () => {
-    mockClient.delete = vi.fn().mockResolvedValueOnce(undefined);
-    const result = await deletePiggyBankEvent(mockClient, '3', '1');
-    expect(mockClient.delete).toHaveBeenCalledWith('/piggy-banks/3/events/1');
-    expect(result).toEqual({ deleted: true, id: '1' });
   });
 });
 

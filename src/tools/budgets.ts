@@ -94,9 +94,17 @@ export async function createBudgetLimit(
   return unwrapSingle(response);
 }
 
+/**
+ * Budget limits are addressed under their budget, not on their own.
+ *
+ * These two used to call `/budget-limits/{id}`, which Firefly III 6.5.5 answers with 404 — verified
+ * against a live instance, see src/tests/phantom-routes.test.ts. The spec only ever defined
+ * `/budgets/{id}/limits/{limitId}`, so both tools now take the budget id as well.
+ */
 export async function updateBudgetLimit(
   client: FireflyClient,
-  id: string,
+  budgetId: string,
+  limitId: string,
   params: {
     start?: string;
     end?: string;
@@ -105,13 +113,59 @@ export async function updateBudgetLimit(
     period?: 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'half_year' | 'yearly';
   },
 ): Promise<UnwrappedSingle> {
-  const response = await client.put<JsonApiSingleResponse>(`/budget-limits/${id}`, params);
+  const response = await client.put<JsonApiSingleResponse>(`/budgets/${budgetId}/limits/${limitId}`, params);
   return unwrapSingle(response);
 }
 
-export async function deleteBudgetLimit(client: FireflyClient, id: string): Promise<{ deleted: true; id: string }> {
-  await client.delete(`/budget-limits/${id}`);
-  return { deleted: true, id };
+export async function deleteBudgetLimit(
+  client: FireflyClient,
+  budgetId: string,
+  limitId: string,
+): Promise<{ deleted: true; id: string }> {
+  await client.delete(`/budgets/${budgetId}/limits/${limitId}`);
+  return { deleted: true, id: limitId };
+}
+
+/** A single budget limit. */
+export async function fetchBudgetLimit(
+  client: FireflyClient,
+  budgetId: string,
+  limitId: string,
+): Promise<UnwrappedSingle> {
+  const response = await client.get<JsonApiSingleResponse>(`/budgets/${budgetId}/limits/${limitId}`);
+  return unwrapSingle(response);
+}
+
+/** Transactions counted against one budget limit. */
+export async function fetchBudgetLimitTransactions(
+  client: FireflyClient,
+  budgetId: string,
+  limitId: string,
+  params: { page?: number; limit?: number },
+): Promise<UnwrappedList> {
+  const response = await client.get<JsonApiListResponse>(`/budgets/${budgetId}/limits/${limitId}/transactions`, {
+    page: params.page,
+    limit: params.limit,
+  });
+  return unwrapList(response);
+}
+
+/** Budget limits across every budget, for a period. */
+export async function fetchAllBudgetLimits(
+  client: FireflyClient,
+  params: { start?: string; end?: string; page?: number; limit?: number },
+): Promise<UnwrappedList> {
+  const query: QueryParams = { page: params.page, limit: params.limit };
+  if (params.start) query.start = params.start;
+  if (params.end) query.end = params.end;
+  const response = await client.get<JsonApiListResponse>('/budget-limits', query);
+  return unwrapList(response);
+}
+
+/** A single budget by id. */
+export async function fetchBudget(client: FireflyClient, id: string): Promise<UnwrappedSingle> {
+  const response = await client.get<JsonApiSingleResponse>(`/budgets/${id}`);
+  return unwrapSingle(response);
 }
 
 export async function fetchAvailableBudgets(
@@ -305,9 +359,11 @@ export function registerBudgetTools(server: McpServer, client: FireflyClient): v
     {
       title: 'Update Budget Limit',
       description:
-        'Update an existing budget limit in Firefly III. Only fields provided will be changed. Use get_budget_limits to find valid limit IDs.',
+        'Update an existing budget limit. Only fields provided will be changed. Limits are addressed under ' +
+        'their budget, so both the budget ID and the limit ID are required. Use get_budget_limits to find them.',
       inputSchema: {
-        id: z.string().describe('Budget limit ID — use get_budget_limits to find valid IDs'),
+        budgetId: budgetIdSchema,
+        limitId: z.string().describe('Budget limit ID — use get_budget_limits to find valid IDs'),
         start: dateSchema.optional().describe('Start date (YYYY-MM-DD)'),
         end: dateSchema.optional().describe('End date (YYYY-MM-DD)'),
         amount: z.string().optional().describe('Limit amount as a number string'),
@@ -319,7 +375,13 @@ export function registerBudgetTools(server: McpServer, client: FireflyClient): v
       },
       annotations: UPDATE_ANNOTATIONS,
     },
-    ({ id, ...params }) => updateBudgetLimit(client, id as string, params as Parameters<typeof updateBudgetLimit>[2]),
+    ({ budgetId, limitId, ...params }) =>
+      updateBudgetLimit(
+        client,
+        parseId(budgetId as string),
+        limitId as string,
+        params as Parameters<typeof updateBudgetLimit>[3],
+      ),
   );
 
   defineTool(
@@ -329,10 +391,82 @@ export function registerBudgetTools(server: McpServer, client: FireflyClient): v
       title: 'Delete Budget Limit',
       description:
         'Permanently delete a budget limit from Firefly III. **This action cannot be undone.** Use get_budget_limits to confirm the ID before deleting.',
-      inputSchema: { id: z.string().describe('Budget limit ID — use get_budget_limits to find valid IDs') },
+      inputSchema: {
+        budgetId: budgetIdSchema,
+        limitId: z.string().describe('Budget limit ID — use get_budget_limits to find valid IDs'),
+      },
       annotations: DELETE_ANNOTATIONS,
     },
-    ({ id }) => deleteBudgetLimit(client, id as string),
+    ({ budgetId, limitId }) => deleteBudgetLimit(client, parseId(budgetId as string), limitId as string),
+  );
+
+  defineTool(
+    server,
+    'get_budget',
+    {
+      title: 'Get Budget',
+      description: 'Get a single budget by ID, including its spending for the current period.',
+      inputSchema: { id: budgetIdSchema },
+      annotations: READ_ANNOTATIONS,
+    },
+    ({ id }) => fetchBudget(client, parseId(id as string)),
+  );
+
+  defineTool(
+    server,
+    'get_all_budget_limits',
+    {
+      title: 'Get All Budget Limits',
+      description:
+        'Get budget limits across every budget for a period, in one call. Use get_budget_limits when ' +
+        'you only care about one budget.',
+      inputSchema: {
+        start: dateSchema.optional().describe('Start date (YYYY-MM-DD)'),
+        end: dateSchema.optional().describe('End date (YYYY-MM-DD)'),
+        page: z.number().int().positive().optional().default(1).describe('Page number'),
+        limit: z.number().int().positive().max(100).optional().default(50).describe('Results per page (max 100)'),
+      },
+      annotations: READ_ANNOTATIONS,
+    },
+    (params) => fetchAllBudgetLimits(client, params as Parameters<typeof fetchAllBudgetLimits>[1]),
+  );
+
+  defineTool(
+    server,
+    'get_budget_limit',
+    {
+      title: 'Get Budget Limit',
+      description: 'Get one budget limit by ID, including how much of it has been spent.',
+      inputSchema: {
+        budgetId: budgetIdSchema,
+        limitId: z.string().describe('Budget limit ID — use get_budget_limits to find valid IDs'),
+      },
+      annotations: READ_ANNOTATIONS,
+    },
+    ({ budgetId, limitId }) => fetchBudgetLimit(client, parseId(budgetId as string), limitId as string),
+  );
+
+  defineTool(
+    server,
+    'get_budget_limit_transactions',
+    {
+      title: 'Get Budget Limit Transactions',
+      description:
+        'Get the transactions counted against one budget limit — what actually consumed that period ' +
+        "budget, rather than everything in the budget's whole history.",
+      inputSchema: {
+        budgetId: budgetIdSchema,
+        limitId: z.string().describe('Budget limit ID — use get_budget_limits to find valid IDs'),
+        page: z.number().int().positive().optional().default(1).describe('Page number'),
+        limit: z.number().int().positive().max(100).optional().default(50).describe('Results per page (max 100)'),
+      },
+      annotations: READ_ANNOTATIONS,
+    },
+    ({ budgetId, limitId, page, limit }) =>
+      fetchBudgetLimitTransactions(client, parseId(budgetId as string), limitId as string, {
+        page: page as number | undefined,
+        limit: limit as number | undefined,
+      }),
   );
 
   defineTool(

@@ -52,6 +52,8 @@ export const TOOL_PROJECTIONS: Record<string, ToolProjection | typeof NO_PROJECT
 
   // ── other large listings ────────────────────────────────────────────────────
   get_budgets: { entity: 'budgets', kind: 'list', default: 'compact' },
+  get_budget: { entity: 'budgets', kind: 'single', default: 'standard' },
+  get_budget_limit_transactions: { entity: 'transactions', kind: 'list', default: 'compact' },
   get_categories: { entity: 'categories', kind: 'list', default: 'compact' },
   get_bills: { entity: 'bills', kind: 'list', default: 'compact' },
   get_object_group_bills: { entity: 'bills', kind: 'list', default: 'compact' },
@@ -72,6 +74,8 @@ export const TOOL_PROJECTIONS: Record<string, ToolProjection | typeof NO_PROJECT
   get_currencies: NO_PROJECTION,
   get_currency: NO_PROJECTION,
   get_budget_limits: NO_PROJECTION,
+  get_all_budget_limits: NO_PROJECTION,
+  get_budget_limit: NO_PROJECTION,
   get_available_budgets: NO_PROJECTION,
   get_available_budget: NO_PROJECTION,
   get_object_groups: NO_PROJECTION,
@@ -83,7 +87,6 @@ export const TOOL_PROJECTIONS: Record<string, ToolProjection | typeof NO_PROJECT
   get_transaction_link: NO_PROJECTION,
   get_piggy_bank_events: NO_PROJECTION,
   get_summary: NO_PROJECTION,
-  get_net_worth_summary: NO_PROJECTION,
   get_about: NO_PROJECTION,
   get_exchange_rate: NO_PROJECTION,
 

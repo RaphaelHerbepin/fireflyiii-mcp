@@ -9,9 +9,9 @@ Load a named subset of tool groups:
 | Preset | Groups included | Tools |
 |--------|----------------|-------|
 | `minimal` | accounts, transactions | 15 |
-| `default` | accounts, transactions, budgets, categories, bills, aggregates | 43 |
-| `budgeting` | accounts, transactions, budgets, categories, bills, piggy-banks, aggregates | 50 |
-| `insights` | accounts, transactions, categories, reports, aggregates | 63 |
+| `default` | accounts, transactions, budgets, categories, bills, aggregates | 47 |
+| `budgeting` | accounts, transactions, budgets, categories, bills, piggy-banks, aggregates | 52 |
+| `insights` | accounts, transactions, categories, reports, aggregates | 62 |
 | `automation` | accounts, transactions, rules, recurring | 37 |
 | `full` | all 15 groups | 146 |
 

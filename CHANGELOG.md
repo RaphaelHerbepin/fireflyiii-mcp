@@ -7,24 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Known broken (inherited from upstream, fixes to follow)
+### Fixed — tools that were calling routes Firefly III 6.5.5 no longer has
 
-Verified against Firefly III 6.5.5 on 2026-08-21. Eight tools call routes or send payloads the API no
-longer accepts. Each is recorded with its verdict in `spec/coverage-exceptions.json` and pinned by
-`src/tests/phantom-routes.test.ts`:
+Verified against a live Firefly III 6.5.5 instance on 2026-08-21, and pinned by
+`src/tests/phantom-routes.test.ts` so a release restoring any of them is noticed. Four tools were
+retargeted, four removed:
 
-- `update_budget_limit` and `delete_budget_limit` call `/budget-limits/{id}` (404). The working route
-  is `/budgets/{id}/limits/{limitId}`.
-- `get_exchange_rate` calls `GET /exchange-rates/by-currencies/{from}/{to}` (404) — that path exists
-  for POST only. The working route is `GET /exchange-rates/{from}/{to}`.
-- `get_net_worth_summary` calls `/summary/net-worth` (404). No replacement route exists.
-- `create_object_group` posts to `/object-groups` (405). Object groups are created implicitly, by
-  setting `object_group_title` on a piggy bank or bill.
-- `create_piggy_bank_event` and `delete_piggy_bank_event` (405 / 404). Events are produced by
-  transfers, not managed directly.
-- `create_piggy_bank` sends `account_id` (422). Firefly III 6.5.5 requires an `accounts[]` array and a
-  currency. The spec is self-contradictory here — it lists `account_id` as required but never declares
-  it as a property — which is why this was settled against a live instance rather than from the spec.
+**Retargeted**
+
+- `update_budget_limit` and `delete_budget_limit` called `/budget-limits/{id}`, which returns 404.
+  Limits are addressed under their budget, so both tools now take a `budgetId` as well as a `limitId`.
+  **This changes their parameters.**
+- `get_exchange_rate` called `GET /exchange-rates/by-currencies/{from}/{to}`, which exists for POST
+  only. It now calls `GET /exchange-rates/{from}/{to}`.
+- `create_piggy_bank` sent `account_id`, which 6.5.5 rejects with 422: it requires an `accounts[]`
+  array and a currency. The tool still takes one account id — that is what callers have — and builds
+  the array itself. It also gained optional `currency_code` and `object_group_title`. The spec is
+  self-contradictory here, listing `account_id` as required while never declaring it as a property,
+  so this was settled against a live instance rather than read off the document.
+
+**Removed** — no working route exists for any of these:
+
+- `get_net_worth_summary` (`/summary/net-worth`, 404). Derive net worth from `get_summary` instead.
+- `create_object_group` (`POST /object-groups`, 405). Object groups are created implicitly, by setting
+  `object_group_title` on a piggy bank or bill — `create_piggy_bank` now accepts it.
+- `create_piggy_bank_event` and `delete_piggy_bank_event` (405 / 404). Piggy bank events are produced
+  by transfers, not managed directly. `get_piggy_bank_events` still works.
 
 ### Changed — BREAKING
 
@@ -48,6 +56,10 @@ longer accepts. Each is recorded with its verdict in `spec/coverage-exceptions.j
   error: the caller concludes on partial data believing it has everything.
 
 ### Added
+
+- Four budget tools that were missing: `get_budget`, `get_all_budget_limits`, `get_budget_limit` and
+  `get_budget_limit_transactions`. The last one answers "what consumed this month's budget" rather
+  than "everything ever charged to this budget", which is the question a monthly review asks.
 
 - **A new `aggregates` tool group** that totals on the server instead of shipping rows. Included in the
   `default`, `budgeting`, `insights` and `full` presets.

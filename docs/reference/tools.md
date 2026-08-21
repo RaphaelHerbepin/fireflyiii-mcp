@@ -48,6 +48,10 @@ in decimal arithmetic, and multiple currencies are reported separately rather th
 |------|-------------|
 | `get_budgets` | List all budgets with spent/available amounts |
 | `get_budget_limits` | Get budget limits for a specific budget and period |
+| `get_budget` | Get a single budget by ID with its current-period spending |
+| `get_all_budget_limits` | Budget limits across every budget for a period, in one call |
+| `get_budget_limit` | Get one budget limit by ID, with how much of it has been spent |
+| `get_budget_limit_transactions` | The transactions counted against one budget limit |
 | `create_budget` | Create a new budget |
 | `update_budget` | Update an existing budget |
 | `delete_budget` | Delete a budget. This action cannot be undone. |
@@ -88,8 +92,6 @@ in decimal arithmetic, and multiple currencies are reported separately rather th
 | `update_piggy_bank` | Update an existing piggy bank |
 | `delete_piggy_bank` | Delete a piggy bank. This action cannot be undone. |
 | `get_piggy_bank_events` | Get all deposit/withdrawal events for a piggy bank |
-| `create_piggy_bank_event` | Add a deposit or withdrawal event to a piggy bank |
-| `delete_piggy_bank_event` | Delete a piggy bank event. This action cannot be undone. |
 
 ## Recurring Transactions
 
@@ -156,7 +158,6 @@ in decimal arithmetic, and multiple currencies are reported separately rather th
 | `get_insight_transfer_no_category` | Transfer totals for transactions with no category attached |
 | `get_insight_transfer_no_tag` | Transfer totals for transactions with no tag attached |
 | `get_about` | Get Firefly III server info (version, PHP version, OS) |
-| `get_net_worth_summary` | Get net worth summary for a date range |
 | `get_account_overview_chart` | Get account overview chart data for a date range |
 | `get_balance_chart` | Get account balance chart data for a date range |
 | `get_budget_chart` | Get budget overview chart data for a date range |
@@ -210,7 +211,6 @@ in decimal arithmetic, and multiple currencies are reported separately rather th
 |------|-------------|
 | `get_object_groups` | List all object groups (used to organise accounts and piggy banks) |
 | `get_object_group` | Get a single object group by ID |
-| `create_object_group` | Create a new object group |
 | `update_object_group` | Update an existing object group |
 | `delete_object_group` | Delete an object group. This action cannot be undone. |
 | `get_object_group_bills` | Get all bills in a specific object group |

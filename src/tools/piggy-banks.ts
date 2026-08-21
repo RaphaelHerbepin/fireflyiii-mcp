@@ -21,6 +21,15 @@ export async function fetchPiggyBanks(
   return unwrapList(response);
 }
 
+/**
+ * Creates a piggy bank.
+ *
+ * Firefly III 6.5.5 requires an `accounts` array and a currency; sending the older single
+ * `account_id` is rejected with 422. The spec is self-contradictory here — it lists `account_id`
+ * under `required` while never declaring it as a property — so this was settled against a live
+ * instance (see src/tests/phantom-routes.test.ts). The tool keeps taking one account id, which is
+ * what callers actually have, and builds the array here.
+ */
 export async function createPiggyBank(
   client: FireflyClient,
   params: {
@@ -30,9 +39,16 @@ export async function createPiggyBank(
     start_date?: string;
     target_date?: string;
     notes?: string;
+    currency_code?: string;
+    object_group_title?: string;
   },
 ): Promise<UnwrappedSingle> {
-  const response = await client.post<JsonApiSingleResponse>('/piggy-banks', params);
+  const { account_id, currency_code, ...rest } = params;
+  const response = await client.post<JsonApiSingleResponse>('/piggy-banks', {
+    ...rest,
+    accounts: [{ account_id }],
+    transaction_currency_code: currency_code ?? 'EUR',
+  });
   return unwrapSingle(response);
 }
 
@@ -67,24 +83,6 @@ export async function fetchPiggyBankEvents(
   return unwrapList(response);
 }
 
-export async function createPiggyBankEvent(
-  client: FireflyClient,
-  id: string,
-  params: { amount: string; date: string },
-): Promise<UnwrappedSingle> {
-  const response = await client.post<JsonApiSingleResponse>(`/piggy-banks/${id}/events`, params);
-  return unwrapSingle(response);
-}
-
-export async function deletePiggyBankEvent(
-  client: FireflyClient,
-  id: string,
-  eventId: string,
-): Promise<{ deleted: true; id: string }> {
-  await client.delete(`/piggy-banks/${id}/events/${eventId}`);
-  return { deleted: true, id: eventId };
-}
-
 export function registerPiggyBankTools(server: McpServer, client: FireflyClient): void {
   defineTool(
     server,
@@ -112,6 +110,14 @@ export function registerPiggyBankTools(server: McpServer, client: FireflyClient)
       inputSchema: {
         name: z.string().describe('Piggy bank name'),
         account_id: z.string().describe('Asset account ID to link to — use get_accounts to find valid IDs'),
+        currency_code: z
+          .string()
+          .optional()
+          .describe('Currency code (e.g. EUR). Required by the API; defaults to EUR.'),
+        object_group_title: z
+          .string()
+          .optional()
+          .describe('Group this piggy bank under a named object group, creating the group if needed'),
         target_amount: z.string().optional().describe('Savings goal amount as a number string'),
         start_date: dateSchema.optional().describe('Start date (YYYY-MM-DD)'),
         target_date: dateSchema.optional().describe('Target completion date (YYYY-MM-DD)'),
@@ -175,39 +181,5 @@ export function registerPiggyBankTools(server: McpServer, client: FireflyClient)
         page: page as number | undefined,
         limit: limit as number | undefined,
       }),
-  );
-
-  defineTool(
-    server,
-    'create_piggy_bank_event',
-    {
-      title: 'Create Piggy Bank Event',
-      description:
-        'Add a deposit or withdrawal event to a piggy bank. Use a positive amount for a deposit and a negative amount for a withdrawal.',
-      inputSchema: {
-        id: z.string().describe('Piggy bank ID'),
-        amount: z.string().describe('Amount as a number string. Positive for deposit, negative for withdrawal.'),
-        date: z.string().describe('Event date (YYYY-MM-DD)'),
-      },
-      annotations: WRITE_ANNOTATIONS,
-    },
-    ({ id, amount, date }) =>
-      createPiggyBankEvent(client, id as string, { amount: amount as string, date: date as string }),
-  );
-
-  defineTool(
-    server,
-    'delete_piggy_bank_event',
-    {
-      title: 'Delete Piggy Bank Event',
-      description:
-        'Permanently delete a deposit/withdrawal event from a piggy bank. **This action cannot be undone.** Use get_piggy_bank_events to confirm the event ID.',
-      inputSchema: {
-        id: z.string().describe('Piggy bank ID'),
-        event_id: z.string().describe('Event ID — use get_piggy_bank_events to find valid IDs'),
-      },
-      annotations: DELETE_ANNOTATIONS,
-    },
-    ({ id, event_id }) => deletePiggyBankEvent(client, id as string, event_id as string),
   );
 }

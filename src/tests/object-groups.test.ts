@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { FireflyClient } from '../client.js';
 import {
-  createObjectGroup,
   deleteObjectGroup,
   fetchObjectGroup,
   fetchObjectGroupBills,
@@ -35,14 +34,6 @@ describe('fetchObjectGroup', () => {
     mockClient.get = vi.fn().mockResolvedValueOnce(singleFixture);
     await fetchObjectGroup(mockClient, '1');
     expect(mockClient.get).toHaveBeenCalledWith('/object-groups/1');
-  });
-});
-
-describe('createObjectGroup', () => {
-  it('posts to /object-groups', async () => {
-    mockClient.post = vi.fn().mockResolvedValueOnce(singleFixture);
-    await createObjectGroup(mockClient, { title: 'Savings' });
-    expect(mockClient.post).toHaveBeenCalledWith('/object-groups', { title: 'Savings' });
   });
 });
 
