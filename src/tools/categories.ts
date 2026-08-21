@@ -34,6 +34,11 @@ export async function fetchCategoryTransactions(
   return unwrapList(response);
 }
 
+/** One category by ID. */
+export async function fetchCategory(client: FireflyClient, id: string): Promise<UnwrappedSingle> {
+  return unwrapSingle(await client.get<JsonApiSingleResponse>(`/categories/${id}`));
+}
+
 export async function createCategory(
   client: FireflyClient,
   params: { name: string; notes?: string },
@@ -117,6 +122,18 @@ export function registerCategoryTools(server: McpServer, client: FireflyClient):
         page: page as number | undefined,
         limit: limit as number | undefined,
       }),
+  );
+
+  defineTool(
+    server,
+    'get_category',
+    {
+      title: 'Get Category',
+      description: 'Get one category by ID, with what has been spent and earned in it.',
+      inputSchema: { id: categoryIdSchema },
+      annotations: READ_ANNOTATIONS,
+    },
+    ({ id }) => fetchCategory(client, parseId(id as string)),
   );
 
   defineTool(

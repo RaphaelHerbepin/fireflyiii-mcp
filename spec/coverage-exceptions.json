@@ -11,48 +11,30 @@
     "operations": 230,
     "paths": 164
   },
-  "uncovered": [],
+  "uncovered": [
+    {
+      "operationId": "getCron",
+      "method": "get",
+      "path": "/v1/cron/{cliToken}",
+      "reason": "Deliberately not exposed. The cliToken is a server-side secret read from the instance's own configuration, and a tool parameter is a text field in a conversation transcript \u2014 exposing this would invite a user to paste an instance secret into a chat, where it would persist in logs and history. Firefly III's cron endpoint is meant to be called by the machine's scheduler, not by an assistant. Nothing else in the API is reachable only through it.",
+      "decidedBy": "RaphaelHerbepin",
+      "decidedOn": "2026-08-21"
+    }
+  ],
   "phantomRoutes": [],
   "baseline": {
     "uncovered": [
       "deleteTransactionJournal",
-      "deleteUser",
-      "destroyData",
-      "finishBatch",
       "getBill",
       "getCategory",
-      "getConfiguration",
-      "getCron",
-      "getCurrentUser",
       "getPiggyBank",
-      "getPreference",
-      "getSingleConfiguration",
       "getTag",
       "getTransactionByJournal",
-      "getUser",
-      "getUserGroup",
-      "listAttachmentByAccount",
-      "listAttachmentByBill",
-      "listAttachmentByBudget",
-      "listAttachmentByCategory",
-      "listAttachmentByPiggyBank",
-      "listAttachmentByTag",
-      "listAttachmentByTransaction",
       "listEventByTransaction",
       "listPiggyBankByAccount",
-      "listPreference",
       "listRuleByBill",
-      "listUser",
-      "listUserGroups",
-      "purgeData",
-      "setConfiguration",
       "storeCurrencyExchangeRatesByDate",
-      "storeCurrencyExchangeRatesByPair",
-      "storePreference",
-      "storeUser",
-      "updatePreference",
-      "updateUser",
-      "updateUserGroup"
+      "storeCurrencyExchangeRatesByPair"
     ],
     "phantomRoutes": []
   }

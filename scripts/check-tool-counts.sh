@@ -109,7 +109,9 @@ fi
 # The most valuable check: catches a tool added without a doc row, and a doc row for a tool that no
 # longer exists. This is acceptance criterion "tools.md lists every tool", made mechanical.
 documented_tools=$(grep -oE '^\| `[a-z_0-9]+`' docs/reference/tools.md | tr -d '|` ' | sort -u)
-actual_tools=$(jq -r '.toolNames[]' <<<"$INVENTORY" | sort -u)
+# Compared against every tool that exists, not just the default surface: admin-destructive is
+# withheld by default but must still be documented.
+actual_tools=$(jq -r '.allToolNames[]' <<<"$INVENTORY" | sort -u)
 missing_rows=$(comm -13 <(echo "$documented_tools") <(echo "$actual_tools"))
 extra_rows=$(comm -23 <(echo "$documented_tools") <(echo "$actual_tools"))
 if [ -n "$missing_rows" ]; then

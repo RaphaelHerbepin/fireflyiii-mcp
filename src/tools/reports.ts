@@ -122,6 +122,16 @@ export async function fetchInsightNoX(
   return client.get(endpoint, { start, end });
 }
 
+/**
+ * One tag.
+ *
+ * Tags are addressed by name rather than id in this endpoint, so the identifier is percent-encoded:
+ * a tag called "vacances 2025" or "café" would otherwise build a broken path.
+ */
+export async function fetchTag(client: FireflyClient, tag: string): Promise<UnwrappedSingle> {
+  return unwrapSingle(await client.get<JsonApiSingleResponse>(`/tags/${encodeURIComponent(tag)}`));
+}
+
 export async function createTag(
   client: FireflyClient,
   params: { tag: string; date?: string; description?: string },
@@ -418,6 +428,18 @@ export function registerReportTools(server: McpServer, client: FireflyClient): v
       annotations: READ_ANNOTATIONS,
     },
     ({ start, end }) => fetchInsightIncome(client, start as string, end as string),
+  );
+
+  defineTool(
+    server,
+    'get_tag',
+    {
+      title: 'Get Tag',
+      description: 'Get one tag by name, with its date and description.',
+      inputSchema: { tag: z.string().describe('Tag name — use get_tags to see what exists') },
+      annotations: READ_ANNOTATIONS,
+    },
+    ({ tag }) => fetchTag(client, tag as string),
   );
 
   defineTool(

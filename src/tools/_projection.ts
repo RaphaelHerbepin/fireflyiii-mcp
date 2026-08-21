@@ -36,6 +36,7 @@ export const TOOL_PROJECTIONS: Record<string, ToolProjection | typeof NO_PROJECT
   // ── transactions ────────────────────────────────────────────────────────────
   get_transactions: { entity: 'transactions', kind: 'list', default: 'compact' },
   get_transaction: { entity: 'transactions', kind: 'single', default: 'standard' },
+  get_transaction_by_journal: { entity: 'transactions', kind: 'single', default: 'standard' },
   search_transactions: { entity: 'transactions', kind: 'list', default: 'compact' },
   get_account_transactions: { entity: 'transactions', kind: 'list', default: 'compact' },
   get_budget_transactions: { entity: 'transactions', kind: 'list', default: 'compact' },
@@ -57,17 +58,23 @@ export const TOOL_PROJECTIONS: Record<string, ToolProjection | typeof NO_PROJECT
   get_budget: { entity: 'budgets', kind: 'single', default: 'standard' },
   get_budget_limit_transactions: { entity: 'transactions', kind: 'list', default: 'compact' },
   get_categories: { entity: 'categories', kind: 'list', default: 'compact' },
+  get_category: { entity: 'categories', kind: 'single', default: 'standard' },
   get_bills: { entity: 'bills', kind: 'list', default: 'compact' },
+  get_bill: { entity: 'bills', kind: 'single', default: 'standard' },
   get_object_group_bills: { entity: 'bills', kind: 'list', default: 'compact' },
   get_piggy_banks: { entity: 'piggy_banks', kind: 'list', default: 'compact' },
+  get_piggy_bank: { entity: 'piggy_banks', kind: 'single', default: 'standard' },
+  get_account_piggy_banks: { entity: 'piggy_banks', kind: 'list', default: 'compact' },
   get_object_group_piggy_banks: { entity: 'piggy_banks', kind: 'list', default: 'compact' },
   get_tags: { entity: 'tags', kind: 'list', default: 'compact' },
+  get_tag: { entity: 'tags', kind: 'single', default: 'standard' },
   get_rules: { entity: 'rules', kind: 'list', default: 'compact' },
   get_rule: { entity: 'rules', kind: 'single', default: 'standard' },
   get_rule_group_rules: { entity: 'rules', kind: 'list', default: 'compact' },
   get_recurring: { entity: 'recurrences', kind: 'list', default: 'compact' },
   get_recurrence: { entity: 'recurrences', kind: 'single', default: 'standard' },
   get_attachments: { entity: 'attachments', kind: 'list', default: 'compact' },
+  get_attachments_for: { entity: 'attachments', kind: 'list', default: 'compact' },
   get_attachment: { entity: 'attachments', kind: 'single', default: 'standard' },
 
   // ── deliberately unprojected ────────────────────────────────────────────────
@@ -83,6 +90,8 @@ export const TOOL_PROJECTIONS: Record<string, ToolProjection | typeof NO_PROJECT
   get_object_groups: NO_PROJECTION,
   get_object_group: NO_PROJECTION,
   get_rule_groups: NO_PROJECTION,
+  get_bill_rules: NO_PROJECTION,
+  get_transaction_piggy_bank_events: NO_PROJECTION,
   get_rule_group: NO_PROJECTION,
   get_link_types: NO_PROJECTION,
   get_link_type: NO_PROJECTION,
@@ -150,6 +159,17 @@ export const TOOL_PROJECTIONS: Record<string, ToolProjection | typeof NO_PROJECT
   get_webhook_message: NO_PROJECTION,
   get_webhook_message_attempts: NO_PROJECTION,
   get_webhook_message_attempt: NO_PROJECTION,
+
+  // Administration records: small, and every field matters when diagnosing access problems.
+  get_current_user: NO_PROJECTION,
+  get_users: NO_PROJECTION,
+  get_user: NO_PROJECTION,
+  get_user_groups: NO_PROJECTION,
+  get_user_group: NO_PROJECTION,
+  get_configuration: NO_PROJECTION,
+  get_configuration_value: NO_PROJECTION,
+  get_preferences: NO_PROJECTION,
+  get_preference: NO_PROJECTION,
 
   // Raw CSV text and binary content: nothing to project.
   export_transactions: NO_PROJECTION,

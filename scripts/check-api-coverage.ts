@@ -15,6 +15,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { COLLECT_SPLITS_ROUTES } from '../src/tools/aggregates.js';
+import { ATTACHABLE_ENTITIES } from '../src/tools/attachments.js';
 import { CURRENCY_SUBRESOURCES } from '../src/tools/currencies.js';
 import { EXPORT_TOOLS } from '../src/tools/exports.js';
 import { CHART_ENDPOINTS, INSIGHT_GROUPED_TOOLS, INSIGHT_NO_X_TOOLS } from '../src/tools/reports.js';
@@ -61,6 +62,7 @@ function tableDrivenRoutes(): string[] {
     ...COLLECT_SPLITS_ROUTES.map((route) => `get ${route}`),
     ...Object.values(AUTOCOMPLETE_ENTITIES).map((e) => `get ${e.path}`),
     ...CURRENCY_SUBRESOURCES.map((r) => `get /currencies/{p}/${r}`),
+    ...Object.values(ATTACHABLE_ENTITIES).map((segment) => `get /${segment}/{p}/attachments`),
   ];
 }
 

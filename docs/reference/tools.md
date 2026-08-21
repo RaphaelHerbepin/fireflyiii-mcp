@@ -1,6 +1,6 @@
 # Available tools
 
-178 tools across 18 groups. Use [Tool filtering](/reference/filtering) to load only what you need.
+207 tools across 20 groups. Use [Tool filtering](/reference/filtering) to load only what you need.
 
 ## Accounts
 
@@ -13,6 +13,41 @@
 | `delete_account` | Delete an account. This action cannot be undone. |
 | `get_account_transactions` | Get all transactions for a specific account, filterable by type and date range |
 | `search_accounts` | Search accounts by name, IBAN, or account number |
+
+## Administration
+
+Requires the owner role; an ordinary personal access token gets 403 on most of these. Not in any
+preset except `full` — on a single-user instance they occupy context to no purpose.
+
+| Tool | Description |
+|------|-------------|
+| `get_current_user` | The user this token authenticates as, and their role |
+| `get_users` | List users on the instance |
+| `get_user` | Get one user by ID |
+| `create_user` | Create a user with their own separate set of financial data |
+| `update_user` | Update a user. Blocking one locks them out. |
+| `delete_user` | Delete a user and every financial record they own. This action cannot be undone. |
+| `get_user_groups` | List administrations — separate sets of books |
+| `get_user_group` | Get one administration, including its primary currency |
+| `update_user_group` | Update an administration. Changing the primary currency does not convert amounts. |
+| `get_configuration` | Instance settings. Reference data excluded by default — it is ~10 000 tokens. |
+| `get_configuration_value` | One setting. The `configuration.` prefix is added for you. |
+| `set_configuration_value` | Change a setting. This is how webhooks get switched on. |
+| `get_preferences` | List this user's preferences |
+| `get_preference` | Get one preference by name |
+| `create_preference` | Create a preference |
+| `update_preference` | Change an existing preference |
+| `finish_batch` | Mark bulk-imported transactions as processed |
+
+## Destructive administration
+
+**Not in any preset, including `full`.** Reachable only via `--groups admin-destructive`. Both require
+`confirm: "DESTROY"` exactly.
+
+| Tool | Description |
+|------|-------------|
+| `destroy_data` | IRREVERSIBLY delete every record of a chosen type. No undo, no backup. |
+| `purge_data` | IRREVERSIBLY remove previously-deleted records, making them unrecoverable |
 
 ## Search
 
@@ -39,6 +74,9 @@ in decimal arithmetic, and multiple currencies are reported separately rather th
 
 | Tool | Description |
 |------|-------------|
+| `get_transaction_piggy_bank_events` | Savings-goal movements a transaction caused |
+| `delete_transaction_journal` | Delete a single split, leaving its group intact. This action cannot be undone. |
+| `get_transaction_by_journal` | Get a transaction from the ID of one of its splits |
 | `get_transactions` | List transactions with filters (account, date, type) |
 | `get_transaction` | Get a single transaction by ID with all splits |
 | `search_transactions` | Keyword search across transactions |
@@ -73,6 +111,7 @@ in decimal arithmetic, and multiple currencies are reported separately rather th
 
 | Tool | Description |
 |------|-------------|
+| `get_category` | Get one category by ID, with what has been spent and earned in it |
 | `get_categories` | List all categories |
 | `get_category_transactions` | Get transactions for a specific category |
 | `create_category` | Create a new category |
@@ -83,6 +122,8 @@ in decimal arithmetic, and multiple currencies are reported separately rather th
 
 | Tool | Description |
 |------|-------------|
+| `get_bill_rules` | Rules that act on a bill — what automation depends on it |
+| `get_bill` | Get one bill by ID, with its amount range, frequency and next expected date |
 | `get_bills` | List all bills with next expected match date |
 | `create_bill` | Create a new bill |
 | `update_bill` | Update an existing bill |
@@ -93,6 +134,8 @@ in decimal arithmetic, and multiple currencies are reported separately rather th
 
 | Tool | Description |
 |------|-------------|
+| `get_account_piggy_banks` | Savings goals attached to one account |
+| `get_piggy_bank` | Get one savings goal by ID, with its target and progress |
 | `get_piggy_banks` | List all piggy banks with current/target amounts |
 | `create_piggy_bank` | Create a new piggy bank |
 | `update_piggy_bank` | Update an existing piggy bank |
@@ -135,6 +178,7 @@ in decimal arithmetic, and multiple currencies are reported separately rather th
 
 | Tool | Description |
 |------|-------------|
+| `get_attachments_for` | Files attached to any account, bill, budget, category, piggy bank, tag or transaction |
 | `get_attachments` | List all file attachments |
 | `get_attachment` | Get a single attachment by ID |
 | `create_attachment` | Create attachment metadata (step 1 of 2 — use `upload_attachment` to send file content) |
@@ -147,6 +191,7 @@ in decimal arithmetic, and multiple currencies are reported separately rather th
 
 | Tool | Description |
 |------|-------------|
+| `get_tag` | Get one tag by name |
 | `get_tags` | List all tags |
 | `get_tag_transactions` | Get transactions for a specific tag |
 | `create_tag` | Create a new tag |
@@ -209,6 +254,8 @@ including reads — until a user with the owner role sets `configuration.allow_w
 
 | Tool | Description |
 |------|-------------|
+| `create_exchange_rates_for_date` | Record rates from one currency to several others on one date |
+| `create_exchange_rates_for_pair` | Record several dated rates for one currency pair at once |
 | `get_exchange_rates` | List every recorded exchange rate |
 | `get_exchange_rate_by_id` | Get one rate by ID |
 | `get_exchange_rates_for_pair` | Every rate recorded for a currency pair, across all dates |

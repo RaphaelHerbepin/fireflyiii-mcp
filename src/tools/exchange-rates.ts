@@ -113,6 +113,26 @@ export async function deleteExchangeRateOnDate(
   return { deleted: true, from, to, date };
 }
 
+/** Records several rates from one currency to many, in one call. */
+export async function storeRatesByPair(
+  client: FireflyClient,
+  from: string,
+  to: string,
+  rates: Record<string, string>,
+): Promise<unknown> {
+  return client.post(`/exchange-rates/by-currencies/${enc(from)}/${enc(to)}`, { rates });
+}
+
+/** Records the rates from one currency to many others, all on the same date. */
+export async function storeRatesByDate(
+  client: FireflyClient,
+  date: string,
+  from: string,
+  rates: Record<string, string>,
+): Promise<unknown> {
+  return client.post(`/exchange-rates/by-date/${enc(date)}`, { from, rates });
+}
+
 export function registerExchangeRateTools(server: McpServer, client: FireflyClient): void {
   const from = z.string().describe('Source currency code, e.g. EUR');
   const to = z.string().describe('Target currency code, e.g. USD');
@@ -182,6 +202,47 @@ export function registerExchangeRateTools(server: McpServer, client: FireflyClie
       annotations: WRITE_ANNOTATIONS,
     },
     (params) => createExchangeRate(client, params as unknown as ExchangeRateInput),
+  );
+
+  defineTool(
+    server,
+    'create_exchange_rates_for_pair',
+    {
+      title: 'Create Several Rates for a Pair',
+      description:
+        'Record several dated rates for one currency pair in a single call — backfilling a month of ' +
+        'EUR/USD, for example, rather than one call per day.',
+      inputSchema: {
+        from,
+        to,
+        rates: z
+          .record(z.string(), z.string())
+          .describe('Date to rate, e.g. {"2025-03-01": "1.0842", "2025-03-02": "1.0851"}'),
+      },
+      annotations: WRITE_ANNOTATIONS,
+    },
+    ({ from: f, to: t, rates }) => storeRatesByPair(client, f as string, t as string, rates as Record<string, string>),
+  );
+
+  defineTool(
+    server,
+    'create_exchange_rates_for_date',
+    {
+      title: 'Create Rates for One Date',
+      description:
+        'Record the rates from one currency to several others on a single date — the shape a daily ' +
+        'rate feed comes in.',
+      inputSchema: {
+        date: dateSchema.describe('Date the rates apply to (YYYY-MM-DD)'),
+        from,
+        rates: z
+          .record(z.string(), z.string())
+          .describe('Target currency code to rate, e.g. {"USD": "1.0842", "GBP": "0.8531"}'),
+      },
+      annotations: WRITE_ANNOTATIONS,
+    },
+    ({ date, from: f, rates }) =>
+      storeRatesByDate(client, date as string, f as string, rates as Record<string, string>),
   );
 
   defineTool(

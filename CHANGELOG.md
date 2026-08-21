@@ -57,6 +57,31 @@ retargeted, four removed:
 
 ### Added
 
+- **Complete API 6.5.5 coverage: 230/230 operations**, verified mechanically by
+  `scripts/check-api-coverage.ts` against the vendored spec, with zero phantom routes. One documented
+  exception: `getCron` takes the instance's CLI token, and a tool parameter is a text field in a
+  conversation transcript — exposing it would invite pasting a server secret into a chat. Firefly's
+  cron endpoint is for the machine's scheduler.
+
+- **An `admin` tool group** (17 tools): users, administrations, instance configuration, preferences,
+  and `finish_batch`. Excluded from every preset but `full` — on a single-user instance they occupy
+  context to no purpose. Each description says the owner role is needed, so a 403 is not a mystery.
+  `get_configuration` returns the editable settings only by default: the full response is ~10 000
+  tokens, of which the search-operator catalogue alone is 17 000 characters, and nobody asking for
+  "the configuration" means that. Reduced by 97%.
+
+- **An `admin-destructive` group** with `destroy_data` and `purge_data`, **excluded from every preset
+  including `full`**. Reaching them takes `--groups admin-destructive`, which nobody types by
+  accident. Both require `confirm: "DESTROY"` exactly — enforced in the schema and re-checked in the
+  handler, because a client that skips schema validation would otherwise turn a typo into an
+  irreversible deletion.
+
+- `get_attachments_for`, one tool covering the seven endpoints that list attachments per record type.
+- Eleven single-record getters and sub-resources that were missing: `get_bill`, `get_bill_rules`,
+  `get_category`, `get_piggy_bank`, `get_account_piggy_banks`, `get_tag`,
+  `get_transaction_by_journal`, `delete_transaction_journal`, `get_transaction_piggy_bank_events`,
+  and two bulk exchange-rate tools.
+
 - Six link-type tools, completing that group: `get_link_type`, `get_link_type_transactions`,
   `create_link_type`, `update_link_type`, `delete_link_type` and `get_all_transaction_links`.
   `get_link_type_transactions` answers the question link types exist for — "show me everything marked
@@ -167,6 +192,9 @@ retargeted, four removed:
 
 ### Fixed
 
+- **Starting the server with no options no longer exposes the irreversible tools.** The default path
+  registered every group literally, so `destroy_data` and `purge_data` were available on a server
+  started with no arguments, even though the `full` preset excludes them. It now defaults to `full`.
 - **`--read-only` no longer drops ten read-only tools.** The filter inferred safety from the tool's
   name — `get_`, `search_`, `test_` — so all nine `export_*` tools and `download_attachment` were
   removed from every read-only server despite carrying `READ_ANNOTATIONS`. It now reads

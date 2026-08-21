@@ -1,6 +1,6 @@
 # Tool filtering
 
-With 178 tools across 18 groups, loading everything consumes significant context window space. Three flags let you control exactly which tools are registered.
+With 207 tools across 20 groups, loading everything consumes significant context window space. Three flags let you control exactly which tools are registered.
 
 ## --preset \<name\>
 
@@ -8,12 +8,12 @@ Load a named subset of tool groups:
 
 | Preset | Groups included | Tools |
 |--------|----------------|-------|
-| `minimal` | search, accounts, transactions | 16 |
-| `default` | search, accounts, transactions, budgets, categories, bills, aggregates | 48 |
-| `budgeting` | search, accounts, transactions, budgets, categories, bills, piggy-banks, aggregates | 53 |
-| `insights` | search, accounts, transactions, categories, reports, aggregates | 63 |
-| `automation` | search, accounts, transactions, rules, recurring, webhooks | 51 |
-| `full` | all 18 groups | 178 |
+| `minimal` | search, accounts, transactions | 19 |
+| `default` | search, accounts, transactions, budgets, categories, bills, aggregates | 54 |
+| `budgeting` | search, accounts, transactions, budgets, categories, bills, piggy-banks, aggregates | 61 |
+| `insights` | search, accounts, transactions, categories, reports, aggregates | 68 |
+| `automation` | search, accounts, transactions, rules, recurring, webhooks | 54 |
+| `full` | all 20 groups except admin-destructive | 207 |
 
 ```bash
 node dist/index.js --preset default
@@ -24,7 +24,7 @@ npx @raphaelherbepin/fireflyiii-mcp --preset budgeting
 
 Comma-separated list of specific groups. Cannot combine with `--preset`.
 
-Valid group names: `accounts`, `aggregates`, `search`, `transactions`, `budgets`, `categories`, `bills`, `piggy-banks`, `reports`, `rules`, `recurring`, `attachments`, `currencies`, `exports`, `object-groups`, `transaction-links`, `webhooks`, `exchange-rates`
+Valid group names: `accounts`, `aggregates`, `search`, `transactions`, `budgets`, `categories`, `bills`, `piggy-banks`, `reports`, `rules`, `recurring`, `attachments`, `currencies`, `exports`, `object-groups`, `transaction-links`, `webhooks`, `exchange-rates`, `admin`, `admin-destructive`
 
 ```bash
 node dist/index.js --groups accounts,transactions,reports
@@ -39,7 +39,7 @@ node dist/index.js --preset default --read-only
 node dist/index.js --groups rules --read-only
 ```
 
-Without any filter flags the server registers all 178 tools (equivalent to `--preset full`).
+Without any filter flags the server registers all 207 tools (equivalent to `--preset full`).
 
 ::: warning `full` is for exploration, not daily use
 Every tool definition costs context before a single call is made. Measured with

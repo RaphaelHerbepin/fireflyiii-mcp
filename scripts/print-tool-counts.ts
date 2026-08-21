@@ -69,7 +69,16 @@ function toolsListBytes(tools: readonly CapturedTool[]): number {
 }
 
 export interface ToolInventory {
+  /** Registered with no options — the default surface, which excludes admin-destructive. */
   total: number;
+  /**
+   * Every tool that exists, opt-in groups included.
+   *
+   * Distinct from `toolNames` because the documentation must describe tools a user can reach, while
+   * the default surface deliberately withholds the irreversible ones. Checking docs against the
+   * default surface would demand that destroy_data be undocumented, which is the opposite of useful.
+   */
+  allToolNames: string[];
   groupCount: number;
   groups: Record<string, number>;
   presets: Record<string, number>;
@@ -97,8 +106,11 @@ export function inventory(): ToolInventory {
     bytes[name] = toolsListBytes(tools);
   }
 
+  const everything = captureTools({ groups: [...TOOL_GROUPS] });
+
   return {
     total: all.length,
+    allToolNames: everything.map((t) => t.name).sort(),
     groupCount: TOOL_GROUPS.length,
     groups,
     presets,

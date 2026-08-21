@@ -6,7 +6,7 @@
 
 Users can query their finances in natural language through Claude, getting answers about accounts, transactions, budgets, categories, bills, piggy banks, and financial insights without writing queries themselves.
 
-**Current state:** 178 tools across 18 groups, full CRUD, stdio and HTTP (OAuth or PAT) transports, tool filtering via `--preset`/`--groups`/`--read-only`.
+**Current state:** 207 tools across 20 groups, full CRUD, stdio and HTTP (OAuth or PAT) transports, tool filtering via `--preset`/`--groups`/`--read-only`.
 
 ### Architecture at a glance
 
@@ -26,7 +26,7 @@ MCP client (Claude Code / Desktop / ...)
                      │  registerAllTools (src/tools/index.ts)
                      │  · TOOL_GROUPS / PRESETS filtering, read-only proxy
                      ▼
-      Tool groups (src/tools/*.ts, 18 groups / 178 tools)
+      Tool groups (src/tools/*.ts, 20 groups / 207 tools)
         · defineTool wrapper: zod validation, error formatting (src/tools/_helpers.ts)
         · autocomplete prompts with per-user TTL cache
                      │
@@ -190,12 +190,12 @@ rules, recurring, attachments, currencies, exports, object-groups, transaction-l
 
 | Name | Groups | Tools |
 |------|--------|-------|
-| `minimal` | search, accounts, transactions | 16 |
-| `default` | search, accounts, transactions, budgets, categories, bills, aggregates | 48 |
-| `budgeting` | search, accounts, transactions, budgets, categories, bills, piggy-banks, aggregates | 53 |
-| `insights` | search, accounts, transactions, categories, reports, aggregates | 63 |
-| `automation` | search, accounts, transactions, rules, recurring, webhooks | 51 |
-| `full` | all 18 groups | 178 |
+| `minimal` | search, accounts, transactions | 19 |
+| `default` | search, accounts, transactions, budgets, categories, bills, aggregates | 54 |
+| `budgeting` | search, accounts, transactions, budgets, categories, bills, piggy-banks, aggregates | 61 |
+| `insights` | search, accounts, transactions, categories, reports, aggregates | 68 |
+| `automation` | search, accounts, transactions, rules, recurring, webhooks | 54 |
+| `full` | all 20 groups except admin-destructive | 207 |
 
 ### Read-only proxy
 

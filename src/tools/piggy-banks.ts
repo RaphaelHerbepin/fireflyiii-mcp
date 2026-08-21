@@ -30,6 +30,16 @@ export async function fetchPiggyBanks(
  * instance (see src/tests/phantom-routes.test.ts). The tool keeps taking one account id, which is
  * what callers actually have, and builds the array here.
  */
+/** One piggy bank by ID. */
+export async function fetchPiggyBank(client: FireflyClient, id: string): Promise<UnwrappedSingle> {
+  return unwrapSingle(await client.get<JsonApiSingleResponse>(`/piggy-banks/${id}`));
+}
+
+/** Piggy banks saving into one account. */
+export async function fetchAccountPiggyBanks(client: FireflyClient, accountId: string): Promise<UnwrappedList> {
+  return unwrapList(await client.get<JsonApiListResponse>(`/accounts/${accountId}/piggy-banks`));
+}
+
 export async function createPiggyBank(
   client: FireflyClient,
   params: {
@@ -99,6 +109,30 @@ export function registerPiggyBankTools(server: McpServer, client: FireflyClient)
     },
     ({ page, limit }) =>
       fetchPiggyBanks(client, { page: page as number | undefined, limit: limit as number | undefined }),
+  );
+
+  defineTool(
+    server,
+    'get_piggy_bank',
+    {
+      title: 'Get Piggy Bank',
+      description: 'Get one savings goal by ID, with its target, current amount and progress.',
+      inputSchema: { id: z.string().describe('Piggy bank ID — use get_piggy_banks to find valid IDs') },
+      annotations: READ_ANNOTATIONS,
+    },
+    ({ id }) => fetchPiggyBank(client, id as string),
+  );
+
+  defineTool(
+    server,
+    'get_account_piggy_banks',
+    {
+      title: 'Get Piggy Banks for an Account',
+      description: 'List the savings goals attached to one account — how much of its balance is already earmarked.',
+      inputSchema: { accountId: z.string().describe('Account ID — use get_accounts to find valid IDs') },
+      annotations: READ_ANNOTATIONS,
+    },
+    ({ accountId }) => fetchAccountPiggyBanks(client, accountId as string),
   );
 
   defineTool(

@@ -257,9 +257,34 @@ describe('registerAllTools — structural invariants', () => {
     }
   });
 
-  it('the full preset is exactly the union of every group', () => {
-    const union = new Set(TOOL_GROUPS.flatMap((g) => [...namesFor({ groups: [g] })]));
+  it('the full preset is every group except admin-destructive', () => {
+    const safeGroups = TOOL_GROUPS.filter((g) => g !== 'admin-destructive');
+    const union = new Set(safeGroups.flatMap((g) => [...namesFor({ groups: [g] })]));
     expect([...namesFor({ preset: 'full' })].sort()).toEqual([...union].sort());
+  });
+
+  it('never puts the irreversible tools in full, or in any other preset', () => {
+    // Asking for every tool is asking to see what the server does, not asking to be handed something
+    // that erases an accounting history.
+    for (const preset of Object.keys(PRESETS)) {
+      const names = namesFor({ preset });
+      expect(names, `${preset} exposes destroy_data`).not.toContain('destroy_data');
+      expect(names, `${preset} exposes purge_data`).not.toContain('purge_data');
+    }
+  });
+
+  it('does not expose the irreversible tools when started with no options at all', () => {
+    // The default path is separate code from the preset path, and this is exactly where a default
+    // that means "literally everything" would be a security bug rather than a convenience.
+    const names = namesFor({});
+    expect(names).not.toContain('destroy_data');
+    expect(names).not.toContain('purge_data');
+  });
+
+  it('exposes them only when asked for by name', () => {
+    const names = namesFor({ groups: ['admin-destructive'] });
+    expect(names).toContain('destroy_data');
+    expect(names).toContain('purge_data');
   });
 
   it('registering with no options is the same as the full preset', () => {

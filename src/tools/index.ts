@@ -1,6 +1,8 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { FireflyClient } from '../client.js';
 import { registerAccountTools } from './accounts.js';
+import { registerAdminTools } from './admin.js';
+import { registerAdminDestructiveTools } from './admin-destructive.js';
 import { registerAggregateTools } from './aggregates.js';
 import { registerAttachmentTools } from './attachments.js';
 import { registerBillTools } from './bills.js';
@@ -38,6 +40,8 @@ export const TOOL_GROUPS = [
   'transaction-links',
   'webhooks',
   'exchange-rates',
+  'admin',
+  'admin-destructive',
 ] as const;
 
 export type ToolGroup = (typeof TOOL_GROUPS)[number];
@@ -48,7 +52,9 @@ export const PRESETS: Record<string, ToolGroup[]> = {
   budgeting: ['search', 'accounts', 'transactions', 'budgets', 'categories', 'bills', 'piggy-banks', 'aggregates'],
   insights: ['search', 'accounts', 'transactions', 'categories', 'reports', 'aggregates'],
   automation: ['search', 'accounts', 'transactions', 'rules', 'recurring', 'webhooks'],
-  full: [...TOOL_GROUPS],
+  // `full` deliberately excludes admin-destructive. Asking for every tool is asking to see what the
+  // server can do, not asking to be handed something that erases an accounting history.
+  full: TOOL_GROUPS.filter((g) => g !== 'admin-destructive'),
 };
 
 export type PresetName = keyof typeof PRESETS;
@@ -134,11 +140,15 @@ export function makeReadOnlyProxy(server: McpServer): McpServer {
 export function registerAllTools(server: McpServer, client: FireflyClient, options: ToolFilterOptions = {}): void {
   const { preset, groups, readOnly = false } = options;
 
+  // No options means the `full` preset, not literally every group: `full` excludes
+  // admin-destructive, and a server started with no arguments must not expose a tool that
+  // irreversibly erases an accounting history. Reaching those needs `--groups admin-destructive`,
+  // which nobody types by accident.
   const activeGroups: Set<ToolGroup> = preset
     ? new Set(PRESETS[preset])
     : groups
       ? new Set(groups)
-      : new Set(TOOL_GROUPS);
+      : new Set(PRESETS.full);
 
   const s = readOnly ? makeReadOnlyProxy(server) : server;
 
@@ -146,6 +156,8 @@ export function registerAllTools(server: McpServer, client: FireflyClient, optio
   if (activeGroups.has('search')) registerSearchTools(s, client);
   if (activeGroups.has('webhooks')) registerWebhookTools(s, client);
   if (activeGroups.has('exchange-rates')) registerExchangeRateTools(s, client);
+  if (activeGroups.has('admin')) registerAdminTools(s, client);
+  if (activeGroups.has('admin-destructive')) registerAdminDestructiveTools(s, client);
   if (activeGroups.has('aggregates')) registerAggregateTools(s, client);
   if (activeGroups.has('transactions')) registerTransactionTools(s, client);
   if (activeGroups.has('budgets')) registerBudgetTools(s, client);

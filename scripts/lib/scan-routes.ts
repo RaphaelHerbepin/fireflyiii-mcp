@@ -47,6 +47,7 @@ export const TABLE_DRIVEN_HELPERS = new Set([
   'collectSplits',
   'fetchAutocomplete',
   'fetchCurrencyRelated',
+  'fetchAttachmentsFor',
 ]);
 
 export interface ScannedRoute {
