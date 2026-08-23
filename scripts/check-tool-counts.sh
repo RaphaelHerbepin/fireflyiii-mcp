@@ -71,28 +71,61 @@ if [ -n "$stale_groups" ]; then
 fi
 
 # ── 3. Preset tables in filtering.md and AGENTS.md ────────────────────────────
-# Rows look like: | `budgeting` | accounts, transactions, … | 44 |
-for f in docs/reference/filtering.md AGENTS.md; do
-  while IFS= read -r line; do
-    preset=$(sed -E 's/^\| *`([a-z]+)`.*/\1/' <<<"$line")
-    documented=$(sed -E 's/.*\| *([0-9]+) *\|[[:space:]]*$/\1/' <<<"$line")
-    actual=$(jq -r --arg p "$preset" '.presets[$p] // empty' <<<"$INVENTORY")
-    [ -z "$actual" ] && continue
-    if [ "$documented" != "$actual" ]; then
-      if [ "$FIX" = 1 ]; then
-        # Replace only the trailing count cell. Rewriting the whole row is how the previous version
-        # concatenated old and new (37 + 43 = "3743") instead of substituting.
-        LINE="$line" ACTUAL="$actual" perl -i -pe '
-          BEGIN { $line = $ENV{LINE}; $actual = $ENV{ACTUAL} }
-          if ($_ eq "$line\n") { s/\|\s*\d+\s*\|\s*$/| $actual |\n/ }
-        ' "$f"
-      else
-        echo "✗ $f: preset '$preset' documented as $documented, actually $actual"
-        fail=1
-      fi
-    fi
-  done < <(grep -E '^\| *`[a-z]+` *\|.*\| *[0-9]+ *\|' "$f" || true)
-done
+# Reads the column whose header says "Tools", not the last numeric cell. A table may legitimately
+# end with some other count — "write tools withheld", for one — and reading position instead of
+# meaning turns that into a spurious failure.
+preset_check=$(INVENTORY="$INVENTORY" python3 - "$FIX" <<'PYEOF'
+import json, os, re, sys
+
+fix = sys.argv[1] == "1"
+presets = json.loads(os.environ["INVENTORY"])["presets"]
+problems = []
+
+for path in ("docs/reference/filtering.md", "AGENTS.md"):
+    lines = open(path, encoding="utf-8").read().split("\n")
+    tools_column = None
+    changed = False
+
+    for i, line in enumerate(lines):
+        cells = [c.strip() for c in line.split("|")[1:-1]] if line.startswith("|") else None
+        if not cells:
+            tools_column = None
+            continue
+
+        # A header row tells us which column holds the tool count, for the rows beneath it.
+        if any(c.lower() == "tools" for c in cells):
+            tools_column = next(i for i, c in enumerate(cells) if c.lower() == "tools")
+            continue
+        if tools_column is None or tools_column >= len(cells):
+            continue
+
+        name = re.fullmatch(r"`?\*{0,2}`?([a-z]+)`?\*{0,2}`?", cells[0])
+        if not name or name.group(1) not in presets:
+            continue
+
+        actual = presets[name.group(1)]
+        documented = re.fullmatch(r"\*{0,2}(\d+)\*{0,2}", cells[tools_column])
+        if not documented:
+            continue
+        if int(documented.group(1)) != actual:
+            if fix:
+                cells[tools_column] = cells[tools_column].replace(documented.group(1), str(actual))
+                lines[i] = "| " + " | ".join(cells) + " |"
+                changed = True
+            else:
+                problems.append(f"{path}: preset '{name.group(1)}' documented as {documented.group(1)}, actually {actual}")
+
+    if changed:
+        open(path, "w", encoding="utf-8").write("\n".join(lines))
+
+print("\n".join(problems))
+PYEOF
+)
+if [ -n "$preset_check" ]; then
+  echo "✗ Preset counts out of date:"
+  printf '%s\n' "$preset_check" | sed 's/^/    /'
+  fail=1
+fi
 
 # ── 4. Group-name lists match TOOL_GROUPS ─────────────────────────────────────
 expected_groups=$(jq -r '.groups | keys_unsorted | sort | join(",")' <<<"$INVENTORY")

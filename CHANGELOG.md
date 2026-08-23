@@ -57,6 +57,12 @@ retargeted, four removed:
 
 ### Added
 
+- The Claude Desktop guide now explains both settings that decide what an assistant can see and do:
+  which preset to pick, and what `MCP_READ_ONLY` withholds, with the tool counts for each. It also
+  spells out how to turn write access on — including that Claude Desktop must be quit entirely, since
+  closing the window leaves the server process running with its old configuration.
+- `docs/reference/filtering.md` says which preset to choose rather than only listing what exists, and
+  gives the read-only and full-access counts side by side.
 - `scripts/benchmark-context.ts` measures what the server costs a context window and what the two
   headline features save, against a live instance. Its output is in the README. It prints markdown to
   stdout rather than editing the README itself: a script that rewrites documentation in CI is a script

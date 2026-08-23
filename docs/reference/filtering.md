@@ -4,16 +4,30 @@ With 207 tools across 20 groups, loading everything consumes significant context
 
 ## --preset \<name\>
 
-Load a named subset of tool groups:
+Load a named subset of tool groups. Pick by what you ask about, not by what exists:
 
-| Preset | Groups included | Tools |
-|--------|----------------|-------|
-| `minimal` | search, accounts, transactions | 19 |
-| `default` | search, accounts, transactions, budgets, categories, bills, aggregates | 54 |
-| `budgeting` | search, accounts, transactions, budgets, categories, bills, piggy-banks, aggregates | 61 |
-| `insights` | search, accounts, transactions, categories, reports, aggregates | 68 |
-| `automation` | search, accounts, transactions, rules, recurring, webhooks | 54 |
-| `full` | all 20 groups except admin-destructive | 207 |
+| Preset | Tools | `tools/list` | Choose it when |
+|--------|-------|--------------|----------------|
+| `minimal` | 19 | ~5 200 tokens | Accounts and transactions only |
+| `default` | 54 | ~13 200 tokens | General use — adds budgets, categories, bills, aggregates |
+| **`budgeting`** | **61** | **~14 700 tokens** | **The sensible default.** Adds savings goals to `default` |
+| `insights` | 68 | ~14 300 tokens | Analysis-heavy — swaps budgets and bills for the report suite |
+| `automation` | 54 | ~13 700 tokens | Maintaining rules, recurring transactions and webhooks |
+| `full` | 207 | ~41 000 tokens | Exploring what exists. Not for daily use. |
+
+Every preset includes the `search` group, so `search_entities` is always available to resolve a name
+to an ID without listing an entire collection.
+
+### What each preset contains
+
+| Preset | Groups |
+|--------|--------|
+| `minimal` | search, accounts, transactions |
+| `default` | search, accounts, transactions, budgets, categories, bills, aggregates |
+| `budgeting` | search, accounts, transactions, budgets, categories, bills, piggy-banks, aggregates |
+| `insights` | search, accounts, transactions, categories, reports, aggregates |
+| `automation` | search, accounts, transactions, rules, recurring, webhooks |
+| `full` | every group except `admin-destructive` |
 
 ```bash
 node dist/index.js --preset default
@@ -32,7 +46,24 @@ node dist/index.js --groups accounts,transactions,reports
 
 ## --read-only
 
-Filter any selection down to read-only tools (`get_*`, `search_*`, `test_*`). All create, update, delete, trigger, and upload tools are excluded. Can combine with `--preset` or `--groups`.
+Filter any selection down to tools that only read. Write tools are **not registered at all**, so a
+client cannot call them — it never learns they exist. That is a stronger guarantee than telling a
+model not to write.
+
+Which tools survive is decided by each tool's `readOnlyHint` annotation, not by its name. That
+distinction matters: the nine `export_*` tools and `download_attachment` only read, and a
+name-prefix rule used to drop all ten.
+
+| Preset | Read-only | Full access | Write tools withheld |
+|--------|-----------|-------------|----------------------|
+| `minimal` | 10 | 19 | 9 |
+| `default` | 33 | 54 | 21 |
+| `budgeting` | 37 | 61 | 24 |
+| `insights` | 53 | 68 | 15 |
+| `automation` | 26 | 54 | 28 |
+| `full` | 127 | 207 | 80 |
+
+Combines with `--preset` or `--groups`.
 
 ```bash
 node dist/index.js --preset default --read-only
