@@ -113,67 +113,96 @@ Parsed by `src/args.ts` and passed to `createServer` as `filterOptions`.
 ```
 fireflyiii-mcp/
 ├── src/
-│   ├── index.ts                 # Entry point — validates env, wires client + server + transport
-│   ├── server.ts                # Server factory: createServer(client, filterOptions) → McpServer
-│   ├── client.ts                # Firefly III HTTP client (fetch wrapper + Bearer auth; accepts token string or getter fn)
-│   ├── http.ts                  # HTTP server + OAuth proxy (authorize, token, callback, register stubs)
-│   ├── args.ts                  # CLI argument parser (--transport, --host, --port, --preset, --groups, --read-only)
-│   ├── transform.ts             # JSON:API response transforms (unwrapList, unwrapSingle, cleanSummary)
-│   ├── types.ts                 # Shared utility types (QueryParams)
+│   ├── index.ts                  # Entry point — validates env, wires client + server + transport
+│   ├── server.ts                 # Server factory: createServer(client, filterOptions) → McpServer
+│   ├── client.ts                 # Firefly III HTTP client (Bearer auth, timeouts, formatError)
+│   ├── http.ts                   # HTTP server + OAuth proxy, and the startup exposure warnings
+│   ├── args.ts                   # CLI argument parser
+│   ├── transform.ts              # JSON:API unwrapping, plus pickFields/pickFieldsList
+│   ├── projection.ts             # FIELD_PRESETS and entity-aware projection (splits nesting)
+│   ├── money.ts                  # Exact decimal arithmetic in BigInt — no float ever touches an amount
+│   ├── redact.ts                 # Masks IBANs, tokens and account numbers before anything is logged
+│   ├── debug.ts                  # debugLog — its own module to keep projection and _helpers acyclic
+│   ├── types.ts                  # Shared utility types (QueryParams)
 │   ├── tools/
-│   │   ├── index.ts             # TOOL_GROUPS, PRESETS, ToolFilterOptions, makeReadOnlyProxy, registerAllTools
-│   │   ├── accounts.ts          # get_accounts, get_account, create_account, update_account, delete_account
-│   │   ├── transactions.ts      # get_transactions, get_transaction, create_transaction, update_transaction, delete_transaction, bulk_update_transactions
-│   │   ├── budgets.ts           # get_budgets, get_budget, get_budget_limits, create_budget, update_budget, delete_budget, create_budget_limit, update_budget_limit, delete_budget_limit
-│   │   ├── categories.ts        # get_categories, get_category, get_category_transactions, create_category, update_category, delete_category
-│   │   ├── bills.ts             # get_bills, get_bill, create_bill, update_bill, delete_bill
-│   │   ├── piggy-banks.ts       # get_piggy_banks, get_piggy_bank, create_piggy_bank, update_piggy_bank, delete_piggy_bank
-│   │   ├── reports.ts           # get_tags, get_tag, get_tag_transactions, get_summary, get_insight_expenses, get_insight_income, create_tag, update_tag, delete_tag
-│   │   ├── rules.ts             # get_rule_groups, get_rule_group, create_rule_group, update_rule_group, delete_rule_group, get_rules, get_rule, create_rule, update_rule, delete_rule, get_rule_group_rules, trigger_rule_group, trigger_rule, test_rule_group, test_rule
-│   │   ├── recurring.ts         # get_recurring, get_recurrence, create_recurring, update_recurring, delete_recurring, get_recurrence_transactions, trigger_recurrence
-│   │   ├── attachments.ts       # get_attachments, get_attachment, create_attachment, update_attachment, delete_attachment, upload_attachment, download_attachment
-│   │   ├── currencies.ts        # get_currencies, get_currency, create_currency, update_currency, delete_currency, enable_currency, disable_currency, set_primary_currency
-│   │   ├── exports.ts           # export_transactions, export_accounts, export_bills, export_budgets, export_categories, export_tags, export_recurring, export_rules, export_piggy_banks
-│   │   ├── object-groups.ts     # get_object_groups, get_object_group, create_object_group, update_object_group, delete_object_group, get_object_group_bills, get_object_group_piggy_banks
-│   │   └── transaction-links.ts # get_link_types, get_transaction_links, get_transaction_link, create_transaction_link, update_transaction_link, delete_transaction_link
+│   │   ├── index.ts              # TOOL_GROUPS, PRESETS, makeReadOnlyProxy, registerAllTools
+│   │   ├── _annotations.ts       # READ/WRITE/UPDATE/DELETE_ANNOTATIONS — required on every tool
+│   │   ├── _helpers.ts           # defineTool (projection + size guard), schemas, TTL cache
+│   │   ├── _projection.ts        # TOOL_PROJECTIONS — which read tools project, onto what
+│   │   ├── _completions.ts       # MCP argument completions, served by Firefly's autocomplete API
+│   │   ├── accounts.ts           # asset/expense/revenue accounts, their transactions, search (7)
+│   │   ├── admin-destructive.ts  # destroy_data, purge_data — excluded from every preset (2)
+│   │   ├── admin.ts              # users, administrations, configuration, preferences (17)
+│   │   ├── aggregates.ts         # server-side totals — never returns rows (6)
+│   │   ├── attachments.ts        # attachment records, upload/download, get_attachments_for (8)
+│   │   ├── bills.ts              # bills and the rules acting on them (7)
+│   │   ├── budgets.ts            # budgets, limits, available budgets (16)
+│   │   ├── categories.ts         # categories and their transactions (6)
+│   │   ├── currencies.ts         # currencies, primary currency, per-currency sub-resources (10)
+│   │   ├── exchange-rates.ts     # rates by id and by currency pair (12)
+│   │   ├── exports.ts            # CSV exports, one tool per entity (9)
+│   │   ├── object-groups.ts      # object groups and their members (6)
+│   │   ├── piggy-banks.ts        # savings goals and their events (7)
+│   │   ├── recurring.ts          # recurring transactions (7)
+│   │   ├── reports.ts            # tags, summaries, /insight/* and /chart/* (37)
+│   │   ├── rules.ts              # rule groups, rules, triggering and testing (15)
+│   │   ├── search.ts             # search_entities over all 17 autocomplete endpoints (1)
+│   │   ├── transaction-links.ts  # link types and transaction links (12)
+│   │   ├── transactions.ts       # transactions, splits, journals (11)
+│   │   └── webhooks.ts           # webhooks, their messages and delivery attempts (13)
 │   └── tests/
+│       ├── _helpers.ts
 │       ├── accounts.test.ts
+│       ├── admin-destructive.test.ts
+│       ├── admin.test.ts
+│       ├── aggregates.test.ts
 │       ├── args.test.ts
 │       ├── attachments.test.ts
 │       ├── bills.test.ts
 │       ├── budgets.test.ts
 │       ├── categories.test.ts
+│       ├── client-security.test.ts
 │       ├── client.test.ts
+│       ├── coverage-gaps.test.ts         # Fetch functions the group suites did not reach
 │       ├── currencies.test.ts
+│       ├── exchange-rates.test.ts
 │       ├── exports.test.ts
+│       ├── guard-response-size.test.ts
+│       ├── helpers.test.ts
+│       ├── http-warnings.test.ts
 │       ├── http.test.ts
-│       ├── integration.test.ts  # Live Firefly III tests (skipped unless FIREFLY_INTEGRATION=true)
+│       ├── integration-fork.test.ts      # This fork's own behaviour, live (also needs FIREFLY_SEEDED)
+│       ├── integration.test.ts           # Live instance (needs FIREFLY_INTEGRATION)
+│       ├── money.test.ts
 │       ├── object-groups.test.ts
+│       ├── phantom-routes.test.ts        # Probes routes the spec omits — pins what a live 6.5.5 answers
 │       ├── piggy-banks.test.ts
+│       ├── prng.test.ts
+│       ├── projection-registry.test.ts
+│       ├── projection.test.ts
+│       ├── read-only.test.ts
 │       ├── recurring.test.ts
+│       ├── redact.test.ts
 │       ├── reports.test.ts
 │       ├── rules.test.ts
+│       ├── scan-routes.test.ts
+│       ├── spec-parse.test.ts
 │       ├── tool-filter.test.ts
 │       ├── transaction-links.test.ts
 │       ├── transactions.test.ts
-│       └── transform.test.ts
-├── dist/                        # Compiled output — gitignored (not committed)
-├── .github/
-│   └── workflows/
-│       ├── ci.yml               # Runs tests on every PR and push to main
-│       └── publish.yml          # Publishes npm + Docker on v* tags (gated on tests)
-├── package.json
-├── tsconfig.json
-├── Dockerfile
-├── docker-compose.yml
-├── .env.example
-├── LICENSE
-├── README.md
-├── CONTRIBUTING.md
-├── SECURITY.md
-├── SUPPORT.md
-├── biome.json
-└── CLAUDE.md                    # References AGENTS.md
+│       ├── transform.test.ts
+│       ├── webhooks.test.ts
+│       └── fixtures/                  # Realistic JSON:API envelopes taken from a live instance
+├── scripts/
+│   ├── check-api-coverage.ts    # Spec vs code, both directions. Fails on regression.
+│   ├── check-tool-counts.sh     # Documented counts vs what the server registers
+│   ├── print-tool-counts.ts     # Tool inventory as JSON, counted at runtime
+│   ├── benchmark-context.ts     # What the server costs a context window
+│   ├── seed-dev-data.ts         # ~2 000 deterministic transactions + an oracle manifest
+│   └── lib/                     # parse-spec.ts, scan-routes.ts, prng.ts
+├── spec/                        # Vendored OpenAPI 6.5.5, coverage exceptions, seed manifest
+├── docs/                        # VitePress documentation site
+└── docker-compose.dev.yml       # Disposable Firefly III stack for development
 ```
 
 ---
@@ -529,19 +558,20 @@ This is independent of `nightly.yml` (Firefly III integration tests), which is a
 
 ## Commits
 
-After every meaningful work step, commit with a `Co-Authored-By` trailer reflecting the specific AI assistant model and design team that authored the change:
+Commit after every meaningful work step.
+
+**Do not add `Co-Authored-By` trailers.** This fork does not attribute commits to the AI assistant
+that wrote them: the commit author is the person responsible for the change, and a trailer naming a
+model adds noise without adding accountability. Upstream's history carries such trailers and is left
+untouched; new commits on this fork do not.
+
+Credit for *human* contributors belongs in `CHANGELOG.md`, where it survives a rebase and reaches
+the GitHub Release notes — see "Releasing a New Version".
 
 ```bash
 git add [files...]
-git commit -m "[type]: [subject]
-
-Co-Authored-By: [Agent model used] <[domain]>"
+git commit -m "[type]: [subject]"
 ```
-
-Use the correct developer attribution matching the model's originating company:
-* **Anthropic / Claude commits:** Use `noreply@anthropic.com` (e.g., `Co-Authored-By: Claude Sonnet 3.5 <noreply@anthropic.com>`)
-* **Google / Gemini commits:** Use `noreply@google.com` (e.g., `Co-Authored-By: Gemini 1.5 Pro <noreply@google.com>`)
-* **OpenAI / GPT commits:** Use `noreply@openai.com` (e.g., `Co-Authored-By: GPT-4o <noreply@openai.com>`)
 
 **Commit types:**
 - `feat:` New tool or feature
@@ -550,6 +580,9 @@ Use the correct developer attribution matching the model's originating company:
 - `test:` Add or update tests
 - `chore:` Dependencies, config, scaffolding
 - `docs:` Documentation only
+
+Subject line: imperative mood, 72 characters or fewer, no trailing period. Use the body to say why
+the change is right, not what the diff already shows.
 
 ---
 

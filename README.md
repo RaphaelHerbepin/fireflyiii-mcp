@@ -41,6 +41,59 @@ All options except Docker require **Node.js 20+**.
 
 ---
 
+## What this fork adds
+
+Relative to [daften/fireflyiii-mcp](https://github.com/daften/fireflyiii-mcp):
+
+- **Field projection** — read tools accept a `fields` parameter (`compact` / `standard` / `full`, or an
+  explicit list), so listing transactions no longer returns all 73 split fields per row.
+- **Response size guard** — oversized list responses are truncated with an explicit `truncated` notice
+  stating how many items were omitted and how to get them, instead of silently overflowing the context.
+- **Server-side aggregation** — an `aggregates` tool group answers "spending by budget over 18 months"
+  without transferring the underlying transactions. Amounts are summed with exact decimal arithmetic.
+- **Complete API 6.5.5 coverage** — verified mechanically against the vendored OpenAPI spec by
+  `scripts/check-api-coverage.ts`, which also flags routes the code calls that the spec does not define.
+- **Security fixes** — `--read-only` no longer drops read-only tools whose names lack a recognised prefix;
+  the filter now derives from tool annotations rather than naming convention. Sensitive values are
+  redacted from debug output, and `403` responses carry an actionable message.
+
+## Measured
+
+Produced by `scripts/benchmark-context.ts` against a live Firefly III 6.5.5 instance holding 2 008
+transactions across 18 months.
+
+### Context cost per preset
+
+| Preset | Tools | `tools/list` |
+|--------|-------|--------------|
+| `minimal` | 19 | ~5,165 tokens |
+| `default` | 54 | ~13,178 tokens |
+| `budgeting` | 61 | ~14,709 tokens |
+| `insights` | 68 | ~14,312 tokens |
+| `automation` | 54 | ~13,677 tokens |
+| `full` | 207 | ~41,008 tokens |
+
+### Cost of answering a question
+
+| Question | Raw JSON:API | Upstream | `standard` | `compact` | Saved |
+|----------|--------------|----------|------------|-----------|-------|
+| One month of expenses | ~44,902 | ~39,584 | ~8,370 | **~4,710** | **-88.1%** |
+| A full page of transactions | ~90,628 | ~80,078 | ~17,008 | **~9,578** | **-88.0%** |
+
+### Cost of a question aggregation answers
+
+| Question | Reading the rows | Aggregating | Saved |
+|----------|------------------|-------------|-------|
+| Spending by budget, 18 months | ~191,600 (20 pages, compact) | **~339** | **-99.8%** |
+| Month-by-month per budget | ~191,600 (same rows, grouped by hand) | **~1,166** | **-99.4%** |
+
+_Token counts are estimates at four characters per token, measured against a live instance._
+
+The second table is the one the fork exists for. Answering "what did I spend per budget over the last
+eighteen months" by reading the transactions costs about 190 000 tokens — more than most context
+windows — and the model still has to do the arithmetic. Asking the server costs 339 tokens and the
+figures are exact to the cent.
+
 ## Option 1: npm package — stdio (simplest)
 
 **Requires:** Node.js 20+, a Firefly III Personal Access Token (Options → Remote access and tokens → Create new token).
@@ -139,59 +192,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the development loop, tool-add checkl
 ## Security
 
 See [SECURITY.md](SECURITY.md) for the vulnerability disclosure policy.
-
-## What this fork adds
-
-Relative to [daften/fireflyiii-mcp](https://github.com/daften/fireflyiii-mcp):
-
-- **Field projection** — read tools accept a `fields` parameter (`compact` / `standard` / `full`, or an
-  explicit list), so listing transactions no longer returns all 73 split fields per row.
-- **Response size guard** — oversized list responses are truncated with an explicit `truncated` notice
-  stating how many items were omitted and how to get them, instead of silently overflowing the context.
-- **Server-side aggregation** — an `aggregates` tool group answers "spending by budget over 18 months"
-  without transferring the underlying transactions. Amounts are summed with exact decimal arithmetic.
-- **Complete API 6.5.5 coverage** — verified mechanically against the vendored OpenAPI spec by
-  `scripts/check-api-coverage.ts`, which also flags routes the code calls that the spec does not define.
-- **Security fixes** — `--read-only` no longer drops read-only tools whose names lack a recognised prefix;
-  the filter now derives from tool annotations rather than naming convention. Sensitive values are
-  redacted from debug output, and `403` responses carry an actionable message.
-
-## Measured
-
-Produced by `scripts/benchmark-context.ts` against a live Firefly III 6.5.5 instance holding 2 008
-transactions across 18 months.
-
-### Context cost per preset
-
-| Preset | Tools | `tools/list` |
-|--------|-------|--------------|
-| `minimal` | 19 | ~5,165 tokens |
-| `default` | 54 | ~13,178 tokens |
-| `budgeting` | 61 | ~14,709 tokens |
-| `insights` | 68 | ~14,312 tokens |
-| `automation` | 54 | ~13,677 tokens |
-| `full` | 207 | ~41,008 tokens |
-
-### Cost of answering a question
-
-| Question | Raw JSON:API | Upstream | `standard` | `compact` | Saved |
-|----------|--------------|----------|------------|-----------|-------|
-| One month of expenses | ~44,902 | ~39,584 | ~8,370 | **~4,710** | **-88.1%** |
-| A full page of transactions | ~90,628 | ~80,078 | ~17,008 | **~9,578** | **-88.0%** |
-
-### Cost of a question aggregation answers
-
-| Question | Reading the rows | Aggregating | Saved |
-|----------|------------------|-------------|-------|
-| Spending by budget, 18 months | ~191,600 (20 pages, compact) | **~339** | **-99.8%** |
-| Month-by-month per budget | ~191,600 (same rows, grouped by hand) | **~1,166** | **-99.4%** |
-
-_Token counts are estimates at four characters per token, measured against a live instance._
-
-The second table is the one the fork exists for. Answering "what did I spend per budget over the last
-eighteen months" by reading the transactions costs about 190 000 tokens — more than most context
-windows — and the model still has to do the arithmetic. Asking the server costs 339 tokens and the
-figures are exact to the cent.
 
 ## Acknowledgements
 

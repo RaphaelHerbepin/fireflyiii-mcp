@@ -22,18 +22,28 @@ TypeScript errors: `npx tsc --noEmit`.
 3. Add a `registerXxxTools(server, client)` call inside the register function in that file.
 4. If creating a new tool file, add the group to `TOOL_GROUPS` in `src/tools/index.ts` and wire it in `registerAllTools`. Consider which presets it belongs in.
 5. Write a test in `src/tests/{category}.test.ts` — mock `client.get` with a realistic JSON:API envelope fixture.
-6. Update the tool table in `README.md`.
+6. Add the tool to `docs/reference/tools.md`, the canonical tool reference. Then run `scripts/check-tool-counts.sh --fix` to bring the hardcoded counts in the docs back in line — it checks eleven places and is quicker than finding them by hand.
 7. Run `npm run build` to verify the TypeScript compiles cleanly.
 
-Always verify field names, required/optional status, and enums against the Firefly III OpenAPI spec before implementing:
+Always verify field names, required/optional status and enums against the OpenAPI spec before
+implementing. It is vendored, so read it locally rather than fetching it:
 
 ```bash
-curl -s "https://api-docs.firefly-iii.org/firefly-iii-6.5.5-v1.yaml" -A "Mozilla/5.0" | grep -A 100 "YourSchema:"
+grep -A 100 "YourSchema:" spec/firefly-iii-6.5.5-v1.yaml
 ```
+
+**Where the spec and a live instance disagree, the instance wins.** This is not hypothetical: 6.5.5
+lists `account_id` as required on `PiggyBankStore` while never declaring it as a property (the API
+wants an `accounts[]` array), and `WebhookStore` names `trigger`/`response`/`delivery` in its
+`required` block while the properties are plural. Both were settled by calling a real instance, and
+both are pinned in `src/tests/phantom-routes.test.ts`. If a write fails validation for a reason the
+spec does not explain, test it against `docker-compose.dev.yml` before assuming your code is wrong.
 
 ## Running integration tests
 
-Integration tests hit a live Firefly III instance. Copy `.env.example` to `.env.test`, fill in `FIREFLY_URL` and `FIREFLY_TOKEN`, then:
+Integration tests **create and delete accounts and transactions**. Point them at a disposable
+instance — `docker-compose.dev.yml` brings one up — never at real books. Copy `.env.test.example` to
+`.env.test`, fill in `FIREFLY_URL` and `FIREFLY_TOKEN`, then:
 
 ```bash
 npm run test:integration

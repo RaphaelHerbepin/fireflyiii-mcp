@@ -14,8 +14,8 @@
 ## Checklist
 
 - [ ] Tests added or updated
-- [ ] `npm test` passes locally
-- [ ] `npx tsc --noEmit` passes locally
-- [ ] README tool table updated (if a new tool was added)
-- [ ] CLAUDE.md updated (if architectural)
-- [ ] Verified relevant fields against the [Firefly III OpenAPI spec](https://api-docs.firefly-iii.org/) (if API-touching)
+- [ ] `npm run check` passes locally (lint, both typechecks, tests)
+- [ ] `npm run verify` passes locally (the above, plus API coverage and tool counts)
+- [ ] `docs/reference/tools.md` updated (if a tool was added or removed)
+- [ ] `AGENTS.md` updated (if architectural)
+- [ ] Verified relevant fields against `spec/firefly-iii-6.5.5-v1.yaml` (if API-touching) — and, where the spec is ambiguous, against a live instance
