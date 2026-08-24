@@ -78,6 +78,16 @@ export async function fetchBillTransactions(
   return unwrapList(response);
 }
 
+/** One bill by ID. */
+export async function fetchBill(client: FireflyClient, id: string): Promise<UnwrappedSingle> {
+  return unwrapSingle(await client.get<JsonApiSingleResponse>(`/bills/${id}`));
+}
+
+/** Rules that act on a bill — what automation touches it before you change or delete it. */
+export async function fetchBillRules(client: FireflyClient, id: string): Promise<UnwrappedList> {
+  return unwrapList(await client.get<JsonApiListResponse>(`/bills/${id}/rules`));
+}
+
 export function registerBillTools(server: McpServer, client: FireflyClient): void {
   defineTool(
     server,
@@ -101,6 +111,32 @@ export function registerBillTools(server: McpServer, client: FireflyClient): voi
         page: page as number | undefined,
         limit: limit as number | undefined,
       }),
+  );
+
+  defineTool(
+    server,
+    'get_bill',
+    {
+      title: 'Get Bill',
+      description: 'Get one bill by ID, with its amount range, frequency and next expected date.',
+      inputSchema: { id: z.string().describe('Bill ID — use get_bills to find valid IDs') },
+      annotations: READ_ANNOTATIONS,
+    },
+    ({ id }) => fetchBill(client, id as string),
+  );
+
+  defineTool(
+    server,
+    'get_bill_rules',
+    {
+      title: 'Get Rules for a Bill',
+      description:
+        'List the rules that act on a bill. Worth checking before changing or deleting one, to see what ' +
+        'automation depends on it.',
+      inputSchema: { id: z.string().describe('Bill ID — use get_bills to find valid IDs') },
+      annotations: READ_ANNOTATIONS,
+    },
+    ({ id }) => fetchBillRules(client, id as string),
   );
 
   defineTool(

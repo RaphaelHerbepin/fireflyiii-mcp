@@ -11,7 +11,7 @@ export default defineConfig({
       { text: 'Guide', link: '/guide/' },
       { text: 'Reference', link: '/reference/tools' },
       { text: 'Contributing', link: '/contributing/' },
-      { text: 'GitHub', link: 'https://github.com/daften/fireflyiii-mcp' },
+      { text: 'GitHub', link: 'https://github.com/RaphaelHerbepin/fireflyiii-mcp' },
     ],
     sidebar: {
       '/guide/': [
@@ -24,6 +24,7 @@ export default defineConfig({
             { text: 'npm + HTTP/PAT', link: '/guide/http-pat' },
             { text: 'Docker + HTTP', link: '/guide/docker' },
             { text: 'Git checkout', link: '/guide/git-checkout' },
+            { text: 'Local dev stack', link: '/guide/dev-stack' },
             { text: 'Claude Desktop', link: '/guide/claude-desktop' },
             { text: 'Nightly builds', link: '/guide/nightly' },
           ],
@@ -50,10 +51,10 @@ export default defineConfig({
         },
       ],
     },
-    socialLinks: [{ icon: 'github', link: 'https://github.com/daften/fireflyiii-mcp' }],
+    socialLinks: [{ icon: 'github', link: 'https://github.com/RaphaelHerbepin/fireflyiii-mcp' }],
     search: { provider: 'local' },
     editLink: {
-      pattern: 'https://github.com/daften/fireflyiii-mcp/edit/main/docs/:path',
+      pattern: 'https://github.com/RaphaelHerbepin/fireflyiii-mcp/edit/main/docs/:path',
     },
     footer: {
       message: 'Released under the MIT License.',

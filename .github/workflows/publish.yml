@@ -21,6 +21,8 @@ jobs:
   # schedule / manual dispatch is a nightly (guarded so it only builds when develop
   # changed since the rolling `nightly` tag).
   setup:
+    # Fork guard: never publish under another account's npm scope or GHCR namespace.
+    if: github.repository == 'RaphaelHerbepin/fireflyiii-mcp'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -141,7 +143,7 @@ jobs:
       - name: Publish to npm (skip if this version already exists)
         run: |
           VERSION=$(node -p "require('./package.json').version")
-          if npm view "@daften/fireflyiii-mcp@${VERSION}" version > /dev/null 2>&1; then
+          if npm view "@raphaelherbepin/fireflyiii-mcp@${VERSION}" version > /dev/null 2>&1; then
             echo "v${VERSION} is already published to npm; skipping publish (idempotent re-run)."
           else
             npm publish --provenance --tag "${{ needs.setup.outputs.npm_tag }}"
@@ -177,7 +179,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v6
         with:
-          images: ghcr.io/daften/fireflyiii-mcp
+          images: ghcr.io/raphaelherbepin/fireflyiii-mcp
           tags: |
             type=semver,pattern={{version}},enable=${{ needs.setup.outputs.channel == 'release' }}
             type=semver,pattern={{major}}.{{minor}},enable=${{ needs.setup.outputs.channel == 'release' }}
@@ -256,7 +258,7 @@ jobs:
 
             - Version: `${{ needs.setup.outputs.version }}`
             - Commit: ${{ steps.built.outputs.sha }}
-            - npm: `npm install @daften/fireflyiii-mcp@nightly`
-            - Docker: `docker pull ghcr.io/daften/fireflyiii-mcp:nightly`
+            - npm: `npm install @raphaelherbepin/fireflyiii-mcp@nightly`
+            - Docker: `docker pull ghcr.io/raphaelherbepin/fireflyiii-mcp:nightly`
 
             > Default installs (`@latest` / `:latest`) are unaffected and continue to point at the most recent tagged release.

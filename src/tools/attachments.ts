@@ -93,6 +93,44 @@ export function downloadAttachmentContent(file: DownloadedAttachment): ContentRe
   };
 }
 
+/**
+ * Entity types that can carry attachments, mapped to their path segment.
+ *
+ * Seven endpoints of identical shape become one tool. Exported so scripts/check-api-coverage.ts can
+ * expand them — fetchAttachmentsFor takes the type as a parameter, so static analysis sees one route
+ * where there are seven.
+ */
+export const ATTACHABLE_ENTITIES = {
+  account: 'accounts',
+  bill: 'bills',
+  budget: 'budgets',
+  category: 'categories',
+  'piggy-bank': 'piggy-banks',
+  // Tags are addressed by name rather than id, so the identifier needs encoding.
+  tag: 'tags',
+  transaction: 'transactions',
+} as const;
+
+export type AttachableEntity = keyof typeof ATTACHABLE_ENTITIES;
+
+export const ATTACHABLE_ENTITY_NAMES = Object.keys(ATTACHABLE_ENTITIES) as [AttachableEntity, ...AttachableEntity[]];
+
+/** Attachments belonging to one record, whatever kind of record it is. */
+export async function fetchAttachmentsFor(
+  client: FireflyClient,
+  entityType: AttachableEntity,
+  id: string,
+  params: { page?: number; limit?: number },
+): Promise<UnwrappedList> {
+  const segment = ATTACHABLE_ENTITIES[entityType];
+  return unwrapList(
+    await client.get<JsonApiListResponse>(`/${segment}/${encodeURIComponent(id)}/attachments`, {
+      page: params.page,
+      limit: params.limit,
+    }),
+  );
+}
+
 export function registerAttachmentTools(server: McpServer, client: FireflyClient): void {
   defineTool(
     server,
@@ -122,6 +160,29 @@ export function registerAttachmentTools(server: McpServer, client: FireflyClient
       annotations: READ_ANNOTATIONS,
     },
     ({ id }) => fetchAttachment(client, id as string),
+  );
+
+  defineTool(
+    server,
+    'get_attachments_for',
+    {
+      title: 'Get Attachments for a Record',
+      description:
+        'List the files attached to one account, bill, budget, category, piggy bank, tag or ' +
+        'transaction — receipts, invoices, statements. Use download_attachment to fetch the contents.',
+      inputSchema: {
+        entity_type: z.enum(ATTACHABLE_ENTITY_NAMES).describe('What kind of record to look under'),
+        id: z.string().describe('The record ID. For tags, the tag name.'),
+        page: z.number().int().positive().optional().default(1).describe('Page number'),
+        limit: z.number().int().positive().max(100).optional().default(50).describe('Results per page (max 100)'),
+      },
+      annotations: READ_ANNOTATIONS,
+    },
+    ({ entity_type, id, page, limit }) =>
+      fetchAttachmentsFor(client, entity_type as AttachableEntity, id as string, {
+        page: page as number | undefined,
+        limit: limit as number | undefined,
+      }),
   );
 
   defineTool(

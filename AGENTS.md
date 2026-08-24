@@ -6,7 +6,10 @@
 
 Users can query their finances in natural language through Claude, getting answers about accounts, transactions, budgets, categories, bills, piggy banks, and financial insights without writing queries themselves.
 
-**Current state:** 140 tools across 14 groups, full CRUD, stdio and HTTP (OAuth or PAT) transports, tool filtering via `--preset`/`--groups`/`--read-only`.
+**Current state:** 207 tools across 20 groups, complete Firefly III API 6.5.5 coverage (230/230
+operations, verified by `scripts/check-api-coverage.ts`), field projection and server-side
+aggregation, stdio and HTTP (OAuth or PAT) transports, tool filtering via
+`--preset`/`--groups`/`--read-only`.
 
 ### Architecture at a glance
 
@@ -26,7 +29,7 @@ MCP client (Claude Code / Desktop / ...)
                      │  registerAllTools (src/tools/index.ts)
                      │  · TOOL_GROUPS / PRESETS filtering, read-only proxy
                      ▼
-      Tool groups (src/tools/*.ts, 14 groups / 140 tools)
+      Tool groups (src/tools/*.ts, 20 groups / 207 tools)
         · defineTool wrapper: zod validation, error formatting (src/tools/_helpers.ts)
         · autocomplete prompts with per-user TTL cache
                      │
@@ -190,12 +193,12 @@ rules, recurring, attachments, currencies, exports, object-groups, transaction-l
 
 | Name | Groups | Tools |
 |------|--------|-------|
-| `minimal` | accounts, transactions | 15 |
-| `default` | accounts, transactions, budgets, categories, bills | 37 |
-| `budgeting` | accounts, transactions, budgets, categories, bills, piggy-banks | 44 |
-| `insights` | accounts, transactions, categories, reports | 57 |
-| `automation` | accounts, transactions, rules, recurring | 37 |
-| `full` | all 14 groups | 140 |
+| `minimal` | search, accounts, transactions | 19 |
+| `default` | search, accounts, transactions, budgets, categories, bills, aggregates | 54 |
+| `budgeting` | search, accounts, transactions, budgets, categories, bills, piggy-banks, aggregates | 61 |
+| `insights` | search, accounts, transactions, categories, reports, aggregates | 68 |
+| `automation` | search, accounts, transactions, rules, recurring, webhooks | 54 |
+| `full` | all 20 groups except admin-destructive | 207 |
 
 ### Read-only proxy
 
@@ -474,7 +477,7 @@ Routine dependency-CVE fixes ship with no human in the loop:
 
 1. Dependabot opens a **grouped** security PR against `main` (`security-fixes` group in `dependabot.yml`).
 2. `auto-merge.yml` enables auto-merge (merge commit); branch protection's required checks gate the merge.
-3. On merge, `auto-release.yml` fires. Because merges are merge commits, it identifies these pushes by the merge subject `Merge pull request #N from daften/dependabot/…` — creating a branch under that name requires push access to the repo, which is a stronger gate than commit authorship (the head commit is authored by whoever merged, and a commit's author field is only a git config value anyway). It bumps the patch version, writes the `### Security` changelog section (via `scripts/release-changelog.sh`), commits `chore(release): X.Y.Z`, tags `vX.Y.Z`, and pushes both with the `RELEASE_TOKEN` PAT (a plain `GITHUB_TOKEN` push would not trigger downstream workflows).
+3. On merge, `auto-release.yml` fires. Because merges are merge commits, it identifies these pushes by the merge subject `Merge pull request #N from RaphaelHerbepin/dependabot/…` — creating a branch under that name requires push access to the repo, which is a stronger gate than commit authorship (the head commit is authored by whoever merged, and a commit's author field is only a git config value anyway). It bumps the patch version, writes the `### Security` changelog section (via `scripts/release-changelog.sh`), commits `chore(release): X.Y.Z`, tags `vX.Y.Z`, and pushes both with the `RELEASE_TOKEN` PAT (a plain `GITHUB_TOKEN` push would not trigger downstream workflows).
    - The changelog bullet is **line 3 of the merge commit** — the merged PR's title, because the repo's `merge_commit_message` setting is `PR_TITLE`. If that setting is ever changed, the workflow fails loudly (a guard rejects any line 3 that is not a `chore(deps…` subject) instead of shipping a `Merge pull request #N` bullet. Fixing it means restoring the setting, not editing the workflow.
 4. The tag push runs `publish.yml`'s normal release path (npm `latest`, Docker semver/`latest`, GitHub Release).
 
@@ -493,7 +496,7 @@ The PR audit check is **relative** (`scripts/audit-compare.sh`: no new moderate+
 **On `develop`:**
 
 1. **Reconcile `## [Unreleased]` against the actual git history first** — don't assume contributors kept it current. Run `git log v<last>..HEAD --oneline` (and `git diff --stat v<last>..HEAD`) and confirm every user-facing change is represented, paying special attention to security fixes. Routine dev-dependency / CI dependabot bumps are conventionally omitted; runtime-dependency or security-relevant bumps are not. Add any missing entries to `## [Unreleased]` before promoting it.
-   - **Credit external contributors.** For any entry that came from a PR by someone other than the maintainer (skip dependabot and AI co-authors), append `_Contributed by [@handle](https://github.com/handle) in [#PR](https://github.com/daften/fireflyiii-mcp/pull/PR)._` to that bullet. Use explicit markdown links, not bare `@mentions` — the changelog also renders on the VitePress docs site, where `@mentions` and `#refs` do not auto-link. The release notes are extracted from this section, so the credit carries through to the GitHub Release automatically.
+   - **Credit external contributors.** For any entry that came from a PR by someone other than the maintainer (skip dependabot and AI co-authors), append `_Contributed by [@handle](https://github.com/handle) in [#PR](https://github.com/RaphaelHerbepin/fireflyiii-mcp/pull/PR)._` to that bullet. Use explicit markdown links, not bare `@mentions` — the changelog also renders on the VitePress docs site, where `@mentions` and `#refs` do not auto-link. The release notes are extracted from this section, so the credit carries through to the GitHub Release automatically.
 2. Open a promotion PR `develop` → `main` and merge it as a merge commit.
 
 **On `main`, once the promotion has landed:**

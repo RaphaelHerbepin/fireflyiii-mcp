@@ -38,6 +38,30 @@ export async function fetchTransaction(client: FireflyClient, id: string): Promi
   return unwrapSingle(response);
 }
 
+/**
+ * One transaction by its journal ID.
+ *
+ * A journal is a single split; a transaction group holds one or more. Transaction links point at
+ * journals, so this is how you resolve a link back to what it refers to.
+ */
+export async function fetchTransactionByJournal(client: FireflyClient, journalId: string): Promise<UnwrappedSingle> {
+  return unwrapSingle(await client.get<JsonApiSingleResponse>(`/transaction-journals/${journalId}`));
+}
+
+/** Deletes a single split, leaving the rest of its group intact. */
+export async function deleteTransactionJournal(
+  client: FireflyClient,
+  journalId: string,
+): Promise<{ deleted: true; id: string }> {
+  await client.delete(`/transaction-journals/${journalId}`);
+  return { deleted: true, id: journalId };
+}
+
+/** Piggy bank events caused by one transaction — what a transfer moved into or out of a savings goal. */
+export async function fetchTransactionPiggyBankEvents(client: FireflyClient, id: string): Promise<UnwrappedList> {
+  return unwrapList(await client.get<JsonApiListResponse>(`/transactions/${id}/piggy-bank-events`));
+}
+
 export async function createTransaction(
   client: FireflyClient,
   params: {
@@ -226,6 +250,52 @@ export function registerTransactionTools(server: McpServer, client: FireflyClien
       annotations: READ_ANNOTATIONS,
     },
     ({ id }) => fetchTransaction(client, id as string),
+  );
+
+  defineTool(
+    server,
+    'get_transaction_by_journal',
+    {
+      title: 'Get Transaction by Journal ID',
+      description:
+        'Get a transaction from the ID of one of its splits. Transaction links point at journals rather ' +
+        'than groups, so this is how you resolve a link back to the transaction it refers to.',
+      inputSchema: {
+        journalId: z.string().describe('Transaction journal ID — appears as transaction_journal_id on a split'),
+      },
+      annotations: READ_ANNOTATIONS,
+    },
+    ({ journalId }) => fetchTransactionByJournal(client, journalId as string),
+  );
+
+  defineTool(
+    server,
+    'delete_transaction_journal',
+    {
+      title: 'Delete One Split',
+      description:
+        'Permanently delete a single split, leaving the rest of its transaction group intact. ' +
+        '**This action cannot be undone.** Use delete_transaction to remove a whole transaction.',
+      inputSchema: {
+        journalId: z.string().describe('Transaction journal ID — appears as transaction_journal_id on a split'),
+      },
+      annotations: DELETE_ANNOTATIONS,
+    },
+    ({ journalId }) => deleteTransactionJournal(client, journalId as string),
+  );
+
+  defineTool(
+    server,
+    'get_transaction_piggy_bank_events',
+    {
+      title: 'Get Piggy Bank Events for a Transaction',
+      description:
+        'List the savings-goal movements a transaction caused — how much a transfer put into or took ' +
+        'out of a piggy bank.',
+      inputSchema: { id: z.string().describe('Transaction ID — use get_transactions to find valid IDs') },
+      annotations: READ_ANNOTATIONS,
+    },
+    ({ id }) => fetchTransactionPiggyBankEvents(client, id as string),
   );
 
   defineTool(

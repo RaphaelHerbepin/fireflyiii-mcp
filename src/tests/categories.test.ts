@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { FireflyClient } from '../client.js';
+import { clearCompletionCache } from '../tools/_completions.js';
 import {
   clearCategoriesCache,
   createCategory,
@@ -150,22 +151,26 @@ describe('category-transactions prompt', () => {
 describe('categories autocomplete completions', () => {
   beforeEach(() => {
     clearCategoriesCache();
+    clearCompletionCache();
   });
 
-  it('fetches categories with limit 1000 and filters suggestions case-insensitively', async () => {
+  // Returns the registered completion handler for the category-transactions prompt argument.
+  function getCategoriesComplete(client: FireflyClient): (value: string) => Promise<string[]> {
     const { server, promptConfigs } = createMockServer();
-    const client = { get: vi.fn(), cacheKey: () => 'test-key' } as unknown as FireflyClient;
     registerCategoryTools(server, client);
-
     const prompt = promptConfigs.get('category-transactions');
-    const categoryField = (prompt as any).argsSchema?.category;
-    const complete = (categoryField as any)[Symbol.for('mcp.completable')].complete as (v: string) => Promise<string[]>;
+    const field = (prompt as any).argsSchema?.category;
+    return (field as any)[Symbol.for('mcp.completable')].complete;
+  }
 
-    vi.mocked(client.get).mockResolvedValueOnce(listFixture);
+  it('queries the autocomplete endpoint instead of filtering a full listing', async () => {
+    const client = { get: vi.fn(), cacheKey: () => 'test-key' } as unknown as FireflyClient;
+    const complete = getCategoriesComplete(client);
+
+    vi.mocked(client.get).mockResolvedValueOnce([{ id: '7', name: 'Food & Dining' }]);
 
     const results = await complete('food');
-    expect(client.get).toHaveBeenCalledTimes(1);
-    expect(client.get).toHaveBeenCalledWith('/categories', { limit: 1000 });
+    expect(client.get).toHaveBeenCalledWith('/autocomplete/categories', { query: 'food', limit: 100 });
     expect(results).toEqual(['7 (Food & Dining)']);
   });
 });

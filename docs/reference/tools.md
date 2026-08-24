@@ -1,6 +1,6 @@
 # Available tools
 
-140 tools across 14 groups. Use [Tool filtering](/reference/filtering) to load only what you need.
+207 tools across 20 groups. Use [Tool filtering](/reference/filtering) to load only what you need.
 
 ## Accounts
 
@@ -14,10 +14,69 @@
 | `get_account_transactions` | Get all transactions for a specific account, filterable by type and date range |
 | `search_accounts` | Search accounts by name, IBAN, or account number |
 
+## Administration
+
+Requires the owner role; an ordinary personal access token gets 403 on most of these. Not in any
+preset except `full` — on a single-user instance they occupy context to no purpose.
+
+| Tool | Description |
+|------|-------------|
+| `get_current_user` | The user this token authenticates as, and their role |
+| `get_users` | List users on the instance |
+| `get_user` | Get one user by ID |
+| `create_user` | Create a user with their own separate set of financial data |
+| `update_user` | Update a user. Blocking one locks them out. |
+| `delete_user` | Delete a user and every financial record they own. This action cannot be undone. |
+| `get_user_groups` | List administrations — separate sets of books |
+| `get_user_group` | Get one administration, including its primary currency |
+| `update_user_group` | Update an administration. Changing the primary currency does not convert amounts. |
+| `get_configuration` | Instance settings. Reference data excluded by default — it is ~10 000 tokens. |
+| `get_configuration_value` | One setting. The `configuration.` prefix is added for you. |
+| `set_configuration_value` | Change a setting. This is how webhooks get switched on. |
+| `get_preferences` | List this user's preferences |
+| `get_preference` | Get one preference by name |
+| `create_preference` | Create a preference |
+| `update_preference` | Change an existing preference |
+| `finish_batch` | Mark bulk-imported transactions as processed |
+
+## Destructive administration
+
+**Not in any preset, including `full`.** Reachable only via `--groups admin-destructive`. Both require
+`confirm: "DESTROY"` exactly.
+
+| Tool | Description |
+|------|-------------|
+| `destroy_data` | IRREVERSIBLY delete every record of a chosen type. No undo, no backup. |
+| `purge_data` | IRREVERSIBLY remove previously-deleted records, making them unrecoverable |
+
+## Search
+
+| Tool | Description |
+|------|-------------|
+| `search_entities` | Resolve a name to an ID across accounts, budgets, categories, bills, tags, piggy banks, rules, currencies and more |
+
+## Aggregates
+
+Totals computed on the server, so a question about months of spending does not require months of
+transactions to cross the wire. These tools return figures and never rows. Amounts are summed exactly
+in decimal arithmetic, and multiple currencies are reported separately rather than added together.
+
+| Tool | Description |
+|------|-------------|
+| `get_transaction_aggregate` | Total transactions over a period, grouped by category, budget, month, type, account or tag |
+| `get_monthly_breakdown` | Month-by-month totals per budget or category, as a compact matrix |
+| `get_budget_performance` | Per budget: limit, spent, remaining, percentage used, and share of total expenses |
+| `get_spending_ratios` | Split expenses across caller-defined groups of budgets, as percentages summing to 100 |
+| `get_account_balance_history` | End-of-period account balances over a date range |
+| `search_uncategorized` | Count and total spending with no budget, no category, or neither |
+
 ## Transactions
 
 | Tool | Description |
 |------|-------------|
+| `get_transaction_piggy_bank_events` | Savings-goal movements a transaction caused |
+| `delete_transaction_journal` | Delete a single split, leaving its group intact. This action cannot be undone. |
+| `get_transaction_by_journal` | Get a transaction from the ID of one of its splits |
 | `get_transactions` | List transactions with filters (account, date, type) |
 | `get_transaction` | Get a single transaction by ID with all splits |
 | `search_transactions` | Keyword search across transactions |
@@ -33,6 +92,10 @@
 |------|-------------|
 | `get_budgets` | List all budgets with spent/available amounts |
 | `get_budget_limits` | Get budget limits for a specific budget and period |
+| `get_budget` | Get a single budget by ID with its current-period spending |
+| `get_all_budget_limits` | Budget limits across every budget for a period, in one call |
+| `get_budget_limit` | Get one budget limit by ID, with how much of it has been spent |
+| `get_budget_limit_transactions` | The transactions counted against one budget limit |
 | `create_budget` | Create a new budget |
 | `update_budget` | Update an existing budget |
 | `delete_budget` | Delete a budget. This action cannot be undone. |
@@ -48,6 +111,7 @@
 
 | Tool | Description |
 |------|-------------|
+| `get_category` | Get one category by ID, with what has been spent and earned in it |
 | `get_categories` | List all categories |
 | `get_category_transactions` | Get transactions for a specific category |
 | `create_category` | Create a new category |
@@ -58,6 +122,8 @@
 
 | Tool | Description |
 |------|-------------|
+| `get_bill_rules` | Rules that act on a bill — what automation depends on it |
+| `get_bill` | Get one bill by ID, with its amount range, frequency and next expected date |
 | `get_bills` | List all bills with next expected match date |
 | `create_bill` | Create a new bill |
 | `update_bill` | Update an existing bill |
@@ -68,13 +134,13 @@
 
 | Tool | Description |
 |------|-------------|
+| `get_account_piggy_banks` | Savings goals attached to one account |
+| `get_piggy_bank` | Get one savings goal by ID, with its target and progress |
 | `get_piggy_banks` | List all piggy banks with current/target amounts |
 | `create_piggy_bank` | Create a new piggy bank |
 | `update_piggy_bank` | Update an existing piggy bank |
 | `delete_piggy_bank` | Delete a piggy bank. This action cannot be undone. |
 | `get_piggy_bank_events` | Get all deposit/withdrawal events for a piggy bank |
-| `create_piggy_bank_event` | Add a deposit or withdrawal event to a piggy bank |
-| `delete_piggy_bank_event` | Delete a piggy bank event. This action cannot be undone. |
 
 ## Recurring Transactions
 
@@ -112,6 +178,7 @@
 
 | Tool | Description |
 |------|-------------|
+| `get_attachments_for` | Files attached to any account, bill, budget, category, piggy bank, tag or transaction |
 | `get_attachments` | List all file attachments |
 | `get_attachment` | Get a single attachment by ID |
 | `create_attachment` | Create attachment metadata (step 1 of 2 — use `upload_attachment` to send file content) |
@@ -124,6 +191,7 @@
 
 | Tool | Description |
 |------|-------------|
+| `get_tag` | Get one tag by name |
 | `get_tags` | List all tags |
 | `get_tag_transactions` | Get transactions for a specific tag |
 | `create_tag` | Create a new tag |
@@ -141,7 +209,6 @@
 | `get_insight_transfer_no_category` | Transfer totals for transactions with no category attached |
 | `get_insight_transfer_no_tag` | Transfer totals for transactions with no tag attached |
 | `get_about` | Get Firefly III server info (version, PHP version, OS) |
-| `get_net_worth_summary` | Get net worth summary for a date range |
 | `get_account_overview_chart` | Get account overview chart data for a date range |
 | `get_balance_chart` | Get account balance chart data for a date range |
 | `get_budget_chart` | Get budget overview chart data for a date range |
@@ -162,12 +229,52 @@
 | `get_insight_transfers_by_asset` | Transfer insights grouped by asset account |
 | `get_insight_transfers_total` | Total transfer amount for a date range |
 
+## Webhooks
+
+Firefly III calling out to a URL you choose. **Disabled by default**: every route here answers 404 —
+including reads — until a user with the owner role sets `configuration.allow_webhooks` to true.
+
+| Tool | Description |
+|------|-------------|
+| `get_webhooks` | List configured webhooks |
+| `get_webhook` | Get one webhook, with its triggers, response type and secret |
+| `create_webhook` | Create a webhook. The URL will receive your transaction data. |
+| `update_webhook` | Replace a webhook. Triggers, responses and deliveries must all be supplied. |
+| `delete_webhook` | Delete a webhook and its message history. This action cannot be undone. |
+| `get_webhook_messages` | Messages a webhook has queued or sent |
+| `get_webhook_message` | One message, with the payload sent |
+| `delete_webhook_message` | Delete a message and its attempts. This action cannot be undone. |
+| `get_webhook_message_attempts` | Delivery attempts for a message, with their responses |
+| `get_webhook_message_attempt` | One delivery attempt in detail |
+| `delete_webhook_message_attempt` | Delete an attempt record. This action cannot be undone. |
+| `submit_webhook` | Send every queued message now |
+| `trigger_transaction_webhook` | Replay one transaction through a webhook |
+
+## Exchange rates
+
+| Tool | Description |
+|------|-------------|
+| `create_exchange_rates_for_date` | Record rates from one currency to several others on one date |
+| `create_exchange_rates_for_pair` | Record several dated rates for one currency pair at once |
+| `get_exchange_rates` | List every recorded exchange rate |
+| `get_exchange_rate_by_id` | Get one rate by ID |
+| `get_exchange_rates_for_pair` | Every rate recorded for a currency pair, across all dates |
+| `get_exchange_rate_on_date` | The rate for a pair on one date |
+| `create_exchange_rate` | Record a rate for a pair on a date |
+| `update_exchange_rate` | Update a rate by ID |
+| `update_exchange_rate_on_date` | Update a rate by pair and date, without needing its ID |
+| `delete_exchange_rate` | Delete one rate. This action cannot be undone. |
+| `delete_exchange_rates_for_pair` | Delete every rate for a pair. This action cannot be undone. |
+| `delete_exchange_rate_on_date` | Delete the rate for a pair on one date. This action cannot be undone. |
+
 ## Currencies
 
 | Tool | Description |
 |------|-------------|
 | `get_currencies` | List all currencies configured in Firefly III |
 | `get_currency` | Get a single currency by code (e.g. EUR, USD) |
+| `get_primary_currency` | The administration's primary currency, the one totals are reported in |
+| `get_currency_related` | Accounts, bills, budget limits, recurrences, rules or transactions in one currency |
 | `create_currency` | Create a new currency |
 | `update_currency` | Update an existing currency |
 | `enable_currency` | Enable a currency for use in transactions |
@@ -195,7 +302,6 @@
 |------|-------------|
 | `get_object_groups` | List all object groups (used to organise accounts and piggy banks) |
 | `get_object_group` | Get a single object group by ID |
-| `create_object_group` | Create a new object group |
 | `update_object_group` | Update an existing object group |
 | `delete_object_group` | Delete an object group. This action cannot be undone. |
 | `get_object_group_bills` | Get all bills in a specific object group |
@@ -206,6 +312,12 @@
 | Tool | Description |
 |------|-------------|
 | `get_link_types` | List available transaction link types (Related, Refund, Paid, etc.) |
+| `get_link_type` | Get one link type, with its inward and outward phrasing |
+| `get_link_type_transactions` | Every transaction connected by one link type |
+| `create_link_type` | Create a named relationship between transactions, e.g. "Refund" |
+| `update_link_type` | Update a link type. Existing links keep working. |
+| `delete_link_type` | Delete a link type and every link using it. This action cannot be undone. |
+| `get_all_transaction_links` | Every transaction link on the instance |
 | `get_transaction_links` | Get all links attached to a transaction journal entry |
 | `get_transaction_link` | Get a single transaction link by ID |
 | `create_transaction_link` | Create a link between two transactions |

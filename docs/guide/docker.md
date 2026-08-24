@@ -3,7 +3,7 @@
 Docker runs in HTTP mode only. Suitable for hosting on a server or home lab where your AI client connects over the network.
 
 The container image is published to GitHub Container Registry:
-**[ghcr.io/daften/fireflyiii-mcp](https://github.com/daften/fireflyiii-mcp/pkgs/container/fireflyiii-mcp)**
+**[ghcr.io/raphaelherbepin/fireflyiii-mcp](https://github.com/RaphaelHerbepin/fireflyiii-mcp/pkgs/container/fireflyiii-mcp)**
 
 ::: tip Headless caller? Use PAT-only mode instead
 The steps below set up OAuth, which needs a browser and a human to approve it on first connection. If this container is fronted by something that can't do that — a gateway, an automation script — skip straight to [npm + HTTP/PAT](/guide/http-pat) instead: omit `FIREFLY_OAUTH_CLIENT_ID` and `MCP_BASE_URL`, and authenticate with a Bearer-token Personal Access Token instead.
@@ -29,7 +29,7 @@ docker run \
   -e FIREFLY_OAUTH_CLIENT_ID=your-client-id \
   -e MCP_BASE_URL=https://mcp.example.com \
   -p 3000:3000 \
-  ghcr.io/daften/fireflyiii-mcp:latest
+  ghcr.io/raphaelherbepin/fireflyiii-mcp:latest
 ```
 
 `MCP_BASE_URL` is the externally reachable URL of your container, used to build OAuth redirect URIs. If omitted, the server falls back to the `Host` request header, which is unreliable behind a reverse proxy.
@@ -44,7 +44,7 @@ docker run \
   -e MCP_PRESET=default \
   -e MCP_READ_ONLY=true \
   -p 3000:3000 \
-  ghcr.io/daften/fireflyiii-mcp:latest
+  ghcr.io/raphaelherbepin/fireflyiii-mcp:latest
 ```
 
 See [Tool filtering](/reference/filtering) for the full list of presets and groups.

@@ -71,3 +71,44 @@ export function cleanSummary(response: RawSummaryResponse): CleanSummaryItem[] {
     },
   }));
 }
+
+/** Preset names accepted by the `fields` parameter of read tools. */
+export type FieldPreset = 'compact' | 'standard' | 'full';
+
+/** Either a preset name or an explicit list of field names. */
+export type FieldSelector = FieldPreset | string[];
+
+/**
+ * Projects a flat object onto a subset of its keys.
+ *
+ * `id` is always kept, even when the caller does not ask for it: without it no follow-up is possible —
+ * no update, no delete, no detail fetch — so dropping it would make the response unusable for
+ * anything but reading.
+ *
+ * A requested key the object does not have is skipped rather than emitted as `undefined`, because an
+ * `undefined` value still serialises a key and costs tokens for nothing. The test is `Object.hasOwn`,
+ * not `!== undefined`: a field whose value is genuinely `null` must survive, since `category_name:
+ * null` is exactly the signal an uncategorised-transaction search looks for.
+ *
+ * Keys come out in the order they were requested, with `id` first. Order is stable through
+ * `JSON.stringify`, so it decides how a model reads each row.
+ */
+export function pickFields<T extends Record<string, unknown>>(obj: T, fields: string[] | '*'): Partial<T> {
+  if (fields === '*') return obj;
+
+  const picked: Record<string, unknown> = {};
+  if (Object.hasOwn(obj, 'id')) picked.id = obj.id;
+  for (const field of fields) {
+    if (field !== 'id' && Object.hasOwn(obj, field)) picked[field] = obj[field];
+  }
+  return picked as Partial<T>;
+}
+
+/** {@link pickFields} over a list. */
+export function pickFieldsList(
+  items: Array<Record<string, unknown>>,
+  fields: string[] | '*',
+): Array<Record<string, unknown>> {
+  if (fields === '*') return items;
+  return items.map((item) => pickFields(item, fields));
+}

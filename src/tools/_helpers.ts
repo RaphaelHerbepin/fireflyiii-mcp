@@ -1,18 +1,45 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { formatError } from '../client.js';
+import { debugLog } from '../debug.js';
+import { projectItem, projectUnwrappedList } from '../projection.js';
+import type { FieldSelector, UnwrappedList, UnwrappedSingle } from '../transform.js';
+import type { ToolAnnotations } from './_annotations.js';
+import { NO_PROJECTION, TOOL_PROJECTIONS } from './_projection.js';
+
+// Re-exported so the thirteen existing call sites keep importing it from here.
+export { debugLog };
 
 type ToolConfig = {
   title?: string;
   description?: string;
   inputSchema?: Record<string, z.ZodTypeAny>;
-  annotations?: {
-    readOnlyHint?: boolean;
-    destructiveHint?: boolean;
-    idempotentHint?: boolean;
-    openWorldHint?: boolean;
-  };
+  /**
+   * Required, not optional. The read-only filter reads `readOnlyHint` from here, so an unannotated
+   * tool has no safety classification at all — and tsc is a better place to discover that than a
+   * production server quietly exposing a write tool to a read-only client.
+   */
+  annotations: ToolAnnotations;
 };
+
+/**
+ * The `fields` parameter, added to every projected read tool.
+ *
+ * Declared once here rather than in each tool's schema: there are 26 of them, and a description this
+ * long copied 26 times would drift. `.default()` puts the default in the published JSON Schema, so a
+ * model can see what it gets without being told.
+ */
+function fieldsSchema(defaultPreset: string): z.ZodTypeAny {
+  return z
+    .union([z.enum(['compact', 'standard', 'full']), z.array(z.string())])
+    .optional()
+    .default(defaultPreset as 'compact' | 'standard' | 'full')
+    .describe(
+      'Which fields to return. "compact" keeps only what budget analysis needs; "standard" adds tags, ' +
+        'notes and reconciliation; "full" returns every field the API provides. You may also pass an ' +
+        `explicit array of field names. "id" is always included. Defaults to "${defaultPreset}".`,
+    );
+}
 
 export function defineTool(
   server: McpServer,
@@ -20,19 +47,49 @@ export function defineTool(
   config: ToolConfig,
   fetch: (args: Record<string, unknown>) => Promise<unknown>,
 ): void {
+  const projection = TOOL_PROJECTIONS[name];
+  const projects = projection !== undefined && projection !== NO_PROJECTION;
+
+  if (projects) {
+    if (config.inputSchema && 'fields' in config.inputSchema) {
+      // Registration-time rather than runtime: a tool declaring its own `fields` would silently lose
+      // one of the two meanings, and the loser would depend on property order.
+      throw new Error(
+        `Tool "${name}" declares an input named "fields", which collides with the projection ` +
+          'parameter. Rename it, or mark the tool NO_PROJECTION in src/tools/_projection.ts.',
+      );
+    }
+    config = { ...config, inputSchema: { ...config.inputSchema, fields: fieldsSchema(projection.default) } };
+  }
+
   // registerTool is generic in the SDK; the cast avoids fighting its complex overload resolution
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (server as any).registerTool(name, config, async (args: Record<string, unknown>) => {
     try {
-      const result = await fetch(args);
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: typeof result === 'string' ? result : JSON.stringify(result, null, 2),
-          },
-        ],
-      };
+      // `fields` is consumed here; handlers never see it and stay unaware projection exists.
+      const { fields, ...rest } = args;
+      const result = await fetch(projects ? rest : args);
+
+      if (!projects || typeof result === 'string' || result === null || result === undefined) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: typeof result === 'string' ? result : JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      }
+
+      const selector = (fields ?? projection.default) as FieldSelector;
+      // Project first, then guard. Guarding first would drop rows that would have fitted once
+      // projected, leaving the caller with a needlessly partial set.
+      const shaped =
+        projection.kind === 'list'
+          ? guardResponseSize(projectUnwrappedList(projection.entity, result as UnwrappedList, selector))
+          : projectItem(projection.entity, result as UnwrappedSingle, selector);
+
+      return { content: [{ type: 'text' as const, text: JSON.stringify(shaped, null, 2) }] };
     } catch (err) {
       return { content: [{ type: 'text' as const, text: formatError(err) }], isError: true };
     }
@@ -95,17 +152,6 @@ export const AUTOCOMPLETE_FETCH_LIMIT = 1000; // max records pulled from the API
 export const AUTOCOMPLETE_MAX_SUGGESTIONS = 100; // max labels returned to the client per keystroke
 const AUTOCOMPLETE_CACHE_TTL_MS = 60_000; // 1 minute
 
-const DEBUG_ENABLED = process.env.FIREFLY_DEBUG === 'true' || process.env.FIREFLY_DEBUG === '1';
-
-/**
- * Writes to stderr only when FIREFLY_DEBUG is set. Never touches stdout, so it is safe under the
- * stdio transport. Used for the verbose autocomplete tracing that would otherwise fire on every
- * keystroke (and echo user search terms) in normal operation.
- */
-export function debugLog(...args: unknown[]): void {
-  if (DEBUG_ENABLED) console.error(...args);
-}
-
 interface CacheEntry<T> {
   promise: Promise<T>;
   fetchedAt: number;
@@ -145,6 +191,76 @@ export function createTtlCache<T>(ttlMs = AUTOCOMPLETE_CACHE_TTL_MS): TtlCache<T
     },
     clear(): void {
       entries.clear();
+    },
+  };
+}
+
+/**
+ * Ceiling on a single tool response, in characters of emitted text. Roughly 25 000 tokens — large
+ * enough that a normal page never approaches it, small enough that one runaway call cannot swallow a
+ * conversation's context.
+ */
+export const MAX_RESPONSE_CHARS = 100_000;
+
+/** Room for the pagination object, the truncation notice and the enclosing braces. */
+const ENVELOPE_RESERVE_CHARS = 512;
+
+/** Extra spaces each line of an item gains once nested inside `data: [ … ]` at two-space indent. */
+const ITEM_INDENT_OVERHEAD = 4;
+
+export interface TruncationNotice {
+  returned: number;
+  omitted: number;
+  reason: 'response_size_limit';
+  hint: string;
+}
+
+/**
+ * Caps a list response, replacing the tail with a structured notice.
+ *
+ * Two decisions worth stating.
+ *
+ * The notice is a property, not a sentence appended to the data. A truncated result that does not
+ * announce itself is worse than an error: the model concludes on partial data believing it has all of
+ * it. Announcing it in prose inside the payload would be missable and unparseable.
+ *
+ * At least one item always comes back, even when that item alone exceeds the budget. Returning an
+ * empty `data` for a non-empty result is a lie, and a worse one than an oversized response — "there
+ * is nothing" and "there is too much" lead to opposite conclusions.
+ *
+ * Size is measured on the text `defineTool` will actually emit, indentation included. Measuring the
+ * compact form would under-count by roughly a third and overshoot the budget every time.
+ *
+ * Call this after projection, never before: guarding first would drop rows that would have fitted
+ * once projected, leaving the model with a needlessly partial set.
+ */
+export function guardResponseSize(result: UnwrappedList): UnwrappedList & { truncated?: TruncationNotice } {
+  const budget = MAX_RESPONSE_CHARS - ENVELOPE_RESERVE_CHARS;
+  const kept: UnwrappedList['data'] = [];
+  let used = 0;
+
+  for (const item of result.data) {
+    const serialised = JSON.stringify(item, null, 2);
+    const cost = serialised.length + ITEM_INDENT_OVERHEAD * (serialised.split('\n').length + 1);
+    // The `kept.length === 0` clause is what guarantees a non-empty result stays non-empty.
+    if (used + cost > budget && kept.length > 0) break;
+    kept.push(item);
+    used += cost;
+  }
+
+  if (kept.length === result.data.length) return result;
+
+  const omitted = result.data.length - kept.length;
+  return {
+    ...result,
+    data: kept,
+    truncated: {
+      returned: kept.length,
+      omitted,
+      reason: 'response_size_limit',
+      hint:
+        'Narrow the date range, lower `limit`, request fewer fields with `fields: "compact"`, or use ' +
+        'an aggregate tool to get totals over the whole period without transferring the rows.',
     },
   };
 }

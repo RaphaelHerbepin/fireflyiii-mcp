@@ -13,7 +13,7 @@ For **Claude Code** (`.claude/mcp.json`) or **Claude Desktop** (`claude_desktop_
   "mcpServers": {
     "fireflyiii": {
       "command": "npx",
-      "args": ["-y", "@daften/fireflyiii-mcp"],
+      "args": ["-y", "@raphaelherbepin/fireflyiii-mcp"],
       "env": {
         "FIREFLY_URL": "https://your-firefly-instance.example.com",
         "FIREFLY_TOKEN": "your-personal-access-token-here"
@@ -27,7 +27,7 @@ Your AI assistant downloads and starts the server automatically on first use. No
 
 ## Optional: limit which tools are loaded
 
-With 140 tools, loading everything uses significant context window space. Use `MCP_PRESET` to load a named subset:
+With 207 tools, loading everything uses significant context window space. Use `MCP_PRESET` to load a named subset:
 
 ```json
 "env": {
@@ -43,7 +43,7 @@ See [Tool filtering](/reference/filtering) for all preset names and group option
 ## Optional: install globally
 
 ```bash
-npm install -g @daften/fireflyiii-mcp
+npm install -g @raphaelherbepin/fireflyiii-mcp
 ```
 
-Then replace `"command": "npx", "args": ["-y", "@daften/fireflyiii-mcp"]` with `"command": "fireflyiii-mcp"`.
+Then replace `"command": "npx", "args": ["-y", "@raphaelherbepin/fireflyiii-mcp"]` with `"command": "fireflyiii-mcp"`.

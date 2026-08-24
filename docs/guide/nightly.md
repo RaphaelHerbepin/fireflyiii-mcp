@@ -15,7 +15,7 @@ Nightly builds are not release-tested and may contain breaking or incomplete cha
   "mcpServers": {
     "fireflyiii": {
       "command": "npx",
-      "args": ["-y", "@daften/fireflyiii-mcp@nightly"],
+      "args": ["-y", "@raphaelherbepin/fireflyiii-mcp@nightly"],
       "env": {
         "FIREFLY_URL": "https://your-firefly-instance.example.com",
         "FIREFLY_TOKEN": "your-personal-access-token-here"
@@ -30,7 +30,7 @@ The `@nightly` tag is what pins you to the nightly channel. Drop it to return to
 ### Docker
 
 ```bash
-docker pull ghcr.io/daften/fireflyiii-mcp:nightly
+docker pull ghcr.io/raphaelherbepin/fireflyiii-mcp:nightly
 ```
 
 ## How nightlies are versioned
@@ -47,6 +47,6 @@ You only ever receive a nightly by explicitly requesting the `@nightly` (npm) or
 Reinstall without the nightly tag:
 
 ```bash
-npx -y @daften/fireflyiii-mcp          # latest tagged release
-docker pull ghcr.io/daften/fireflyiii-mcp:latest
+npx -y @raphaelherbepin/fireflyiii-mcp          # latest tagged release
+docker pull ghcr.io/raphaelherbepin/fireflyiii-mcp:latest
 ```

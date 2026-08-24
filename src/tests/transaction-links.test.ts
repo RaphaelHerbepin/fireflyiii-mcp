@@ -1,12 +1,18 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { FireflyClient } from '../client.js';
 import {
+  createLinkType,
   createTransactionLink,
+  deleteLinkType,
   deleteTransactionLink,
+  fetchAllTransactionLinks,
+  fetchLinkType,
   fetchLinkTypes,
+  fetchLinkTypeTransactions,
   fetchTransactionLink,
   fetchTransactionLinks,
   registerTransactionLinkTools,
+  updateLinkType,
   updateTransactionLink,
 } from '../tools/transaction-links.js';
 import { createMockServer } from './_helpers.js';
@@ -94,5 +100,65 @@ describe('handler smoke — transaction-links', () => {
     registerTransactionLinkTools(server, client);
     const result = await handlers.get('get_link_types')!({});
     expect(result).toMatchObject({ isError: true });
+  });
+});
+
+describe('link types', () => {
+  const linkTypeSingle = {
+    data: {
+      id: '4',
+      type: 'link_types',
+      attributes: { name: 'Refund', inward: 'is refunded by', outward: 'refunds', editable: true },
+      links: {},
+    },
+  };
+  const linkTypeList = {
+    data: [linkTypeSingle.data],
+    meta: { pagination: { current_page: 1, total_pages: 1, total: 1 } },
+  };
+
+  it('reads one link type', async () => {
+    mockClient.get = vi.fn().mockResolvedValueOnce(linkTypeSingle);
+    expect(await fetchLinkType(mockClient, '4')).toMatchObject({ id: '4', name: 'Refund' });
+    expect(mockClient.get).toHaveBeenCalledWith('/link-types/4');
+  });
+
+  it('lists the transactions connected by a link type', async () => {
+    // The question link types exist to answer: "show me everything marked as a refund".
+    mockClient.get = vi.fn().mockResolvedValueOnce(linkTypeList);
+    await fetchLinkTypeTransactions(mockClient, '4', { page: 1, limit: 50 });
+    expect(mockClient.get).toHaveBeenCalledWith('/link-types/4/transactions', { page: 1, limit: 50 });
+  });
+
+  it('creates a link type with both directions of phrasing', async () => {
+    mockClient.post = vi.fn().mockResolvedValueOnce(linkTypeSingle);
+    await createLinkType(mockClient, { name: 'Refund', inward: 'is refunded by', outward: 'refunds' });
+    expect(mockClient.post).toHaveBeenCalledWith('/link-types', {
+      name: 'Refund',
+      inward: 'is refunded by',
+      outward: 'refunds',
+    });
+  });
+
+  it('updates and deletes a link type', async () => {
+    mockClient.put = vi.fn().mockResolvedValueOnce(linkTypeSingle);
+    await updateLinkType(mockClient, '4', { name: 'Reimbursement' });
+    expect(mockClient.put).toHaveBeenCalledWith('/link-types/4', { name: 'Reimbursement' });
+
+    mockClient.delete = vi.fn().mockResolvedValueOnce(undefined);
+    expect(await deleteLinkType(mockClient, '4')).toEqual({ deleted: true, id: '4' });
+  });
+
+  it('lists every link on the instance, not just one journal’s', async () => {
+    mockClient.get = vi.fn().mockResolvedValueOnce(linkTypeList);
+    await fetchAllTransactionLinks(mockClient, { page: 1, limit: 50 });
+    expect(mockClient.get).toHaveBeenCalledWith('/transaction-links', { page: 1, limit: 50 });
+  });
+
+  it('warns that deleting a link type removes the links using it', () => {
+    const { server, toolConfigs } = createMockServer();
+    registerTransactionLinkTools(server, mockClient);
+    // The transactions survive; the relationships between them do not, and that is not obvious.
+    expect(toolConfigs.get('delete_link_type').description).toMatch(/every link using it is\s+removed/i);
   });
 });

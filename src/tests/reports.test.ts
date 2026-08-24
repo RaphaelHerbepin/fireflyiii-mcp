@@ -10,7 +10,6 @@ import {
   fetchInsightGrouped,
   fetchInsightIncome,
   fetchInsightNoX,
-  fetchNetWorth,
   fetchSummary,
   fetchTags,
   fetchTagTransactions,
@@ -235,25 +234,6 @@ describe('fetchAbout', () => {
   });
 });
 
-describe('fetchNetWorth', () => {
-  it('calls /summary/net-worth with params', async () => {
-    const fixture = [{ key: 'net-worth-in-EUR', value: { monetary_value: '5000' } }];
-    mockClient.get = vi.fn().mockResolvedValueOnce(fixture);
-    const result = await fetchNetWorth(mockClient, '2026-01-01', '2026-01-31');
-    expect(mockClient.get).toHaveBeenCalledWith('/summary/net-worth', { start: '2026-01-01', end: '2026-01-31' });
-    expect(result).toEqual(fixture);
-  });
-  it('includes currency_code when provided', async () => {
-    mockClient.get = vi.fn().mockResolvedValueOnce([]);
-    await fetchNetWorth(mockClient, '2026-01-01', '2026-01-31', 'EUR');
-    expect(mockClient.get).toHaveBeenCalledWith('/summary/net-worth', {
-      start: '2026-01-01',
-      end: '2026-01-31',
-      currency_code: 'EUR',
-    });
-  });
-});
-
 describe('fetchChart', () => {
   it('calls chart endpoint with start/end', async () => {
     const fixture = [{ label: 'Checking', entries: {} }];
@@ -269,12 +249,12 @@ describe('fetchExchangeRate', () => {
     const fixture = { data: { rate: 1.08 } };
     mockClient.get = vi.fn().mockResolvedValueOnce(fixture);
     await fetchExchangeRate(mockClient, 'EUR', 'USD');
-    expect(mockClient.get).toHaveBeenCalledWith('/exchange-rates/by-currencies/EUR/USD', {});
+    expect(mockClient.get).toHaveBeenCalledWith('/exchange-rates/EUR/USD', {});
   });
   it('includes date when provided', async () => {
     mockClient.get = vi.fn().mockResolvedValueOnce({});
     await fetchExchangeRate(mockClient, 'EUR', 'USD', '2026-01-01');
-    expect(mockClient.get).toHaveBeenCalledWith('/exchange-rates/by-currencies/EUR/USD', { date: '2026-01-01' });
+    expect(mockClient.get).toHaveBeenCalledWith('/exchange-rates/EUR/USD', { date: '2026-01-01' });
   });
 });
 

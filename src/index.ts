@@ -2,7 +2,7 @@
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { type ParsedArgs, parseArgs } from './args.js';
 import { FireflyClient } from './client.js';
-import { requestContext, startHttpServer } from './http.js';
+import { requestContext, startHttpServer, warnAboutHttpExposure } from './http.js';
 import { createServer } from './server.js';
 
 let parsed: ParsedArgs;
@@ -34,6 +34,7 @@ if (transport === 'http') {
     if (!store) throw new Error('No request context — Bearer token was not set before this call');
     return store.token;
   });
+  warnAboutHttpExposure(filterOptions, host);
   await startHttpServer(() => createServer(client, filterOptions), host, port, portWasExplicit, oauthClientId, url);
 } else {
   const token = process.env.FIREFLY_TOKEN;

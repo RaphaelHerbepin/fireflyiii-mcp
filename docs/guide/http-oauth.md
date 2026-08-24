@@ -33,7 +33,7 @@ MCP clients use a random port for their OAuth callback. This server acts as a pr
 ```bash
 FIREFLY_URL=https://your-firefly-instance.example.com \
 FIREFLY_OAUTH_CLIENT_ID=your-client-id \
-npx @daften/fireflyiii-mcp --transport http
+npx @raphaelherbepin/fireflyiii-mcp --transport http
 ```
 
 To use a different port: add `--port 4000`.

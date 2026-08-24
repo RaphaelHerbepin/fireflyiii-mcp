@@ -5,13 +5,15 @@ import { makeReadOnlyProxy, PRESETS, registerAllTools, TOOL_GROUPS } from '../to
 
 function createMockServer() {
   const registered: string[] = [];
+  const toolConfigs = new Map<string, unknown>();
   const server = {
-    registerTool: vi.fn((name: string) => {
+    registerTool: vi.fn((name: string, config: unknown) => {
       registered.push(name);
+      toolConfigs.set(name, config);
     }),
     registerPrompt: vi.fn(),
   } as unknown as McpServer;
-  return { server, registered };
+  return { server, registered, toolConfigs };
 }
 
 const mockClient = {} as FireflyClient;
@@ -30,12 +32,11 @@ describe('registerAllTools — no options', () => {
     expect(registered).toContain('get_recurring');
     expect(registered).toContain('get_attachments');
     expect(registered).toContain('get_currencies');
-    expect(registered.length).toBe(140);
   });
 });
 
 describe('registerAllTools — presets', () => {
-  it('minimal preset registers only accounts and transactions (14 tools)', () => {
+  it('minimal preset registers only accounts and transactions', () => {
     const { server, registered } = createMockServer();
     registerAllTools(server, mockClient, { preset: 'minimal' });
     expect(registered).toContain('get_accounts');
@@ -50,10 +51,9 @@ describe('registerAllTools — presets', () => {
     expect(registered).not.toContain('get_rule_groups');
     expect(registered).not.toContain('get_recurring');
     expect(registered).not.toContain('get_attachments');
-    expect(registered.length).toBe(15);
   });
 
-  it('default preset registers accounts, transactions, budgets, categories, bills (35 tools)', () => {
+  it('default preset registers accounts, transactions, budgets, categories, bills', () => {
     const { server, registered } = createMockServer();
     registerAllTools(server, mockClient, { preset: 'default' });
     expect(registered).toContain('get_accounts');
@@ -68,10 +68,9 @@ describe('registerAllTools — presets', () => {
     expect(registered).not.toContain('get_rule_groups');
     expect(registered).not.toContain('get_recurring');
     expect(registered).not.toContain('get_attachments');
-    expect(registered.length).toBe(37);
   });
 
-  it('budgeting preset registers accounts, transactions, budgets, categories, bills, piggy-banks (39 tools)', () => {
+  it('budgeting preset registers accounts, transactions, budgets, categories, bills, piggy-banks', () => {
     const { server, registered } = createMockServer();
     registerAllTools(server, mockClient, { preset: 'budgeting' });
     expect(registered).toContain('get_accounts');
@@ -83,10 +82,9 @@ describe('registerAllTools — presets', () => {
     expect(registered).not.toContain('get_rule_groups');
     expect(registered).not.toContain('get_recurring');
     expect(registered).not.toContain('get_attachments');
-    expect(registered.length).toBe(44);
   });
 
-  it('insights preset registers accounts, transactions, categories, reports (56 tools)', () => {
+  it('insights preset registers accounts, transactions, categories, reports', () => {
     const { server, registered } = createMockServer();
     registerAllTools(server, mockClient, { preset: 'insights' });
     expect(registered).toContain('get_accounts');
@@ -101,10 +99,9 @@ describe('registerAllTools — presets', () => {
     expect(registered).not.toContain('get_rule_groups');
     expect(registered).not.toContain('get_recurring');
     expect(registered).not.toContain('get_attachments');
-    expect(registered.length).toBe(57);
   });
 
-  it('automation preset registers accounts, transactions, rules, recurring (33 tools)', () => {
+  it('automation preset registers accounts, transactions, rules, recurring', () => {
     const { server, registered } = createMockServer();
     registerAllTools(server, mockClient, { preset: 'automation' });
     expect(registered).toContain('get_accounts');
@@ -117,13 +114,6 @@ describe('registerAllTools — presets', () => {
     expect(registered).not.toContain('get_piggy_banks');
     expect(registered).not.toContain('get_tags');
     expect(registered).not.toContain('get_attachments');
-    expect(registered.length).toBe(37);
-  });
-
-  it('full preset registers all 140 tools', () => {
-    const { server, registered } = createMockServer();
-    registerAllTools(server, mockClient, { preset: 'full' });
-    expect(registered.length).toBe(140);
   });
 });
 
@@ -137,7 +127,6 @@ describe('registerAllTools — groups', () => {
     expect(registered).toContain('get_piggy_banks');
     expect(registered).not.toContain('get_transactions');
     expect(registered).not.toContain('get_budgets');
-    expect(registered.length).toBe(14);
   });
 
   it('single group registers only that group', () => {
@@ -147,13 +136,12 @@ describe('registerAllTools — groups', () => {
     expect(registered).toContain('trigger_rule');
     expect(registered).toContain('test_rule');
     expect(registered).not.toContain('get_accounts');
-    expect(registered.length).toBe(15);
   });
 });
 
 describe('registerAllTools — readOnly', () => {
   it('filters out all write tools (no options + readOnly)', () => {
-    const { server, registered } = createMockServer();
+    const { server, registered, toolConfigs } = createMockServer();
     registerAllTools(server, mockClient, { readOnly: true });
     // Read tools are present
     expect(registered).toContain('get_accounts');
@@ -167,12 +155,14 @@ describe('registerAllTools — readOnly', () => {
     expect(registered).not.toContain('trigger_rule');
     expect(registered).not.toContain('trigger_rule_group');
     expect(registered).not.toContain('upload_attachment');
-    // Every registered tool must be a read tool
+    // Read tools whose names match no prefix are kept: the filter reads annotations now, not names.
+    expect(registered).toContain('export_transactions');
+    expect(registered).toContain('download_attachment');
+    // Every registered tool must declare itself read-only. Asserting on the annotation rather than
+    // on the name is the point of the change: the name is a convention, the annotation is the claim.
     for (const name of registered) {
-      expect(
-        name.startsWith('get_') || name.startsWith('search_') || name.startsWith('test_'),
-        `"${name}" should not be registered in readOnly mode`,
-      ).toBe(true);
+      const config = toolConfigs.get(name) as { annotations?: { readOnlyHint?: boolean } };
+      expect(config?.annotations?.readOnlyHint, `"${name}" is registered but does not declare readOnlyHint`).toBe(true);
     }
   });
 
@@ -228,12 +218,98 @@ describe('TOOL_GROUPS and PRESETS exports', () => {
     expect(TOOL_GROUPS).toContain('exports');
     expect(TOOL_GROUPS).toContain('object-groups');
     expect(TOOL_GROUPS).toContain('transaction-links');
-    expect(TOOL_GROUPS.length).toBe(14);
   });
 
   it('PRESETS defines all six preset names', () => {
     expect(Object.keys(PRESETS)).toEqual(
       expect.arrayContaining(['minimal', 'default', 'budgeting', 'insights', 'automation', 'full']),
     );
+  });
+});
+
+describe('registerAllTools — structural invariants', () => {
+  // These replace the hardcoded counts this file used to assert. Absolute numbers now live in
+  // scripts/check-tool-counts.sh, which derives them from the registry and checks the documentation
+  // against them. Asserting them here too meant every tool added broke six unrelated assertions, and
+  // the habit became "update the number" rather than "check the number". Invariants stay true as the
+  // server grows, and say something a count cannot.
+
+  const namesFor = (options: Parameters<typeof registerAllTools>[2]) => {
+    const { server, registered } = createMockServer();
+    registerAllTools(server, mockClient, options);
+    return new Set(registered);
+  };
+
+  it('every group contributes at least one tool', () => {
+    for (const group of TOOL_GROUPS) {
+      expect(namesFor({ groups: [group] }).size, `group '${group}' registers no tools`).toBeGreaterThan(0);
+    }
+  });
+
+  it('no tool belongs to more than one group', () => {
+    const seen = new Map<string, string>();
+    for (const group of TOOL_GROUPS) {
+      for (const name of namesFor({ groups: [group] })) {
+        const previous = seen.get(name);
+        expect(previous, `'${name}' is registered by both '${previous}' and '${group}'`).toBeUndefined();
+        seen.set(name, group);
+      }
+    }
+  });
+
+  it('the full preset is every group except admin-destructive', () => {
+    const safeGroups = TOOL_GROUPS.filter((g) => g !== 'admin-destructive');
+    const union = new Set(safeGroups.flatMap((g) => [...namesFor({ groups: [g] })]));
+    expect([...namesFor({ preset: 'full' })].sort()).toEqual([...union].sort());
+  });
+
+  it('never puts the irreversible tools in full, or in any other preset', () => {
+    // Asking for every tool is asking to see what the server does, not asking to be handed something
+    // that erases an accounting history.
+    for (const preset of Object.keys(PRESETS)) {
+      const names = namesFor({ preset });
+      expect(names, `${preset} exposes destroy_data`).not.toContain('destroy_data');
+      expect(names, `${preset} exposes purge_data`).not.toContain('purge_data');
+    }
+  });
+
+  it('does not expose the irreversible tools when started with no options at all', () => {
+    // The default path is separate code from the preset path, and this is exactly where a default
+    // that means "literally everything" would be a security bug rather than a convenience.
+    const names = namesFor({});
+    expect(names).not.toContain('destroy_data');
+    expect(names).not.toContain('purge_data');
+  });
+
+  it('exposes them only when asked for by name', () => {
+    const names = namesFor({ groups: ['admin-destructive'] });
+    expect(names).toContain('destroy_data');
+    expect(names).toContain('purge_data');
+  });
+
+  it('registering with no options is the same as the full preset', () => {
+    expect([...namesFor({})].sort()).toEqual([...namesFor({ preset: 'full' })].sort());
+  });
+
+  it('presets nest: minimal is contained in default, which is contained in budgeting', () => {
+    const minimal = namesFor({ preset: 'minimal' });
+    const dflt = namesFor({ preset: 'default' });
+    const budgeting = namesFor({ preset: 'budgeting' });
+    for (const name of minimal) expect(dflt, `default is missing '${name}'`).toContain(name);
+    for (const name of dflt) expect(budgeting, `budgeting is missing '${name}'`).toContain(name);
+  });
+
+  it('every preset names only groups that exist', () => {
+    for (const [preset, groups] of Object.entries(PRESETS)) {
+      for (const group of groups) {
+        expect(TOOL_GROUPS, `preset '${preset}' names unknown group '${group}'`).toContain(group);
+      }
+    }
+  });
+
+  it('registers no tool twice', () => {
+    const { server, registered } = createMockServer();
+    registerAllTools(server, mockClient);
+    expect(registered.length).toBe(new Set(registered).size);
   });
 });

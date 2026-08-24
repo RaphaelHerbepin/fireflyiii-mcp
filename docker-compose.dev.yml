@@ -1,0 +1,89 @@
+# Disposable Firefly III stack for developing against, isolated from any real instance.
+#
+# Named `fireflyiii-mcp-dev` so its volumes and containers cannot collide with another Compose
+# project on the same machine — `docker compose -f docker-compose.dev.yml down -v` then destroys only
+# this stack's data. Storage is named volumes, never bind mounts: a bind mount pointed at the wrong
+# directory is how a dev stack eats real data.
+#
+#   docker compose -f docker-compose.dev.yml up -d
+#   CONTAINER=fireflyiii-dev scripts/ci-create-token.sh http://localhost:8080   # prints a PAT
+#   npx tsx scripts/seed-dev-data.ts --url http://localhost:8080 --token <PAT>
+#
+name: fireflyiii-mcp-dev
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: fireflyiii-dev-db
+    environment:
+      POSTGRES_DB: firefly
+      POSTGRES_USER: firefly
+      # Development-only credentials for a container with no published port. Not a secret.
+      POSTGRES_PASSWORD: firefly
+    volumes:
+      - firefly-dev-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U firefly -d firefly']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  firefly:
+    # Pinned to the version this repository's vendored OpenAPI spec describes. Never :latest — the
+    # point of this stack is to test against the API the tools were written for.
+    image: fireflyiii/core:version-6.5.5
+    container_name: fireflyiii-dev
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Fixed key for an ephemeral local instance. Not a secret; do not reuse anywhere real.
+      APP_KEY: 'base64:Y4JA+ihRFmfM1P6v0KD2lMLtFnR+8eCOo5xhHqL0j3Q='
+      APP_ENV: local
+      APP_URL: 'http://localhost:8080'
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: '5432'
+      DB_DATABASE: firefly
+      DB_USERNAME: firefly
+      DB_PASSWORD: firefly
+      SITE_OWNER: dev@example.test
+      DEFAULT_LANGUAGE: en_US
+      DEFAULT_LOCALE: equal
+      TRUSTED_PROXIES: '**'
+      LOG_CHANNEL: stderr
+      SEND_ERROR_MESSAGE: 'false'
+      SEND_REGISTRATION_MAIL: 'false'
+      # Webhooks are off by default in Firefly III. Without this the whole /webhooks surface answers
+      # 404 — including GET — which reads as "this version has no webhooks" rather than "they are
+      # switched off". Enabled here so the webhook tools can be exercised against the dev stack.
+      ALLOW_WEBHOOKS: 'true'
+    ports:
+      - '8080:8080'
+    volumes:
+      - firefly-dev-upload:/var/www/html/storage/upload
+    healthcheck:
+      test: ['CMD', 'curl', '-sf', 'http://localhost:8080/healthcheck']
+      interval: 10s
+      timeout: 5s
+      retries: 36
+      start_period: 30s
+
+  mcp:
+    build: .
+    container_name: fireflyiii-mcp-dev
+    depends_on:
+      firefly:
+        condition: service_healthy
+    command: ['--transport', 'http', '--host', '0.0.0.0', '--port', '3000']
+    environment:
+      FIREFLY_URL: 'http://firefly:8080'
+      MCP_PRESET: full
+      # PAT-only mode: no OAuth client is configured, so callers send a Firefly III token as Bearer.
+    ports:
+      - '3000:3000'
+    restart: unless-stopped
+
+volumes:
+  firefly-dev-db:
+  firefly-dev-upload:

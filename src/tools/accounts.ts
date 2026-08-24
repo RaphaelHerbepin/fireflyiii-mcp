@@ -1,4 +1,3 @@
-import { completable } from '@modelcontextprotocol/sdk/server/completable.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import type { FireflyClient } from '../client.js';
@@ -12,15 +11,8 @@ import {
 } from '../transform.js';
 import type { QueryParams } from '../types.js';
 import { DELETE_ANNOTATIONS, READ_ANNOTATIONS, UPDATE_ANNOTATIONS, WRITE_ANNOTATIONS } from './_annotations.js';
-import {
-  AUTOCOMPLETE_FETCH_LIMIT,
-  AUTOCOMPLETE_MAX_SUGGESTIONS,
-  createTtlCache,
-  dateSchema,
-  debugLog,
-  defineTool,
-  parseId,
-} from './_helpers.js';
+import { withEntityCompletion } from './_completions.js';
+import { AUTOCOMPLETE_FETCH_LIMIT, createTtlCache, dateSchema, defineTool, parseId } from './_helpers.js';
 
 export async function fetchAccounts(
   client: FireflyClient,
@@ -136,24 +128,15 @@ export function registerAccountTools(server: McpServer, client: FireflyClient): 
       }),
   );
 
-  const accountIdSchema = completable(
+  const accountIdSchema = withEntityCompletion(
     z.string().describe('Account ID — use get_accounts to find valid IDs'),
-    async (value) => {
-      debugLog(`[Autocomplete] Account search input: "${value}"`);
-      try {
-        const accounts = await accountsCache.get(client.cacheKey(), () =>
-          fetchAccounts(client, { limit: AUTOCOMPLETE_FETCH_LIMIT }),
-        );
-        const suggestions = accounts.data
-          .map((a) => `${a.id} (${a.name ?? ''} - ${a.type ?? ''})`)
-          .filter((label) => label.toLowerCase().includes(value.toLowerCase()))
-          .slice(0, AUTOCOMPLETE_MAX_SUGGESTIONS);
-        debugLog(`[Autocomplete] Account suggestions found: ${suggestions.length}`);
-        return suggestions;
-      } catch (err) {
-        debugLog('[Autocomplete Error - Account]:', err);
-        return [];
-      }
+    client,
+    'accounts',
+    {
+      // Older Firefly versions have no /autocomplete/* endpoints; keep the listing path as a fallback.
+      list: () =>
+        accountsCache.get(client.cacheKey(), () => fetchAccounts(client, { limit: AUTOCOMPLETE_FETCH_LIMIT })),
+      label: (item: Record<string, unknown>) => `${item.name ?? ''} - ${item.type ?? ''}`,
     },
   );
 

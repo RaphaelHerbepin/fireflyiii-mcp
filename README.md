@@ -1,14 +1,18 @@
 # MCP server for Firefly III
 
-[![npm version](https://img.shields.io/npm/v/@daften/fireflyiii-mcp.svg)](https://www.npmjs.com/package/@daften/fireflyiii-mcp)
-[![npm downloads](https://img.shields.io/npm/dm/@daften/fireflyiii-mcp.svg)](https://www.npmjs.com/package/@daften/fireflyiii-mcp)
-[![CI](https://github.com/daften/fireflyiii-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/daften/fireflyiii-mcp/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/@raphaelherbepin/fireflyiii-mcp.svg)](https://www.npmjs.com/package/@raphaelherbepin/fireflyiii-mcp)
+[![npm downloads](https://img.shields.io/npm/dm/@raphaelherbepin/fireflyiii-mcp.svg)](https://www.npmjs.com/package/@raphaelherbepin/fireflyiii-mcp)
+[![CI](https://github.com/RaphaelHerbepin/fireflyiii-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/RaphaelHerbepin/fireflyiii-mcp/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Documentation](https://img.shields.io/badge/docs-daften.github.io-blue)](https://daften.github.io/fireflyiii-mcp/)
+[![Documentation](https://img.shields.io/badge/docs-raphaelherbepin.github.io-blue)](https://raphaelherbepin.github.io/fireflyiii-mcp/)
+
+> **This is a fork of [daften/fireflyiii-mcp](https://github.com/daften/fireflyiii-mcp)** by Dieter Blomme, MIT licensed.
+> It adds field projection, server-side aggregation, complete Firefly III API 6.5.5 coverage, and a set of
+> security fixes. See [what this fork adds](#what-this-fork-adds) below.
 
 An [MCP (Model Context Protocol)](https://modelcontextprotocol.io) server that connects any MCP-compatible AI assistant to your [Firefly III](https://www.firefly-iii.org) personal finance instance. Ask your AI assistant questions about your finances in natural language.
 
-📖 **[Full documentation → daften.github.io/fireflyiii-mcp](https://daften.github.io/fireflyiii-mcp/)**
+📖 **[Full documentation → raphaelherbepin.github.io/fireflyiii-mcp](https://raphaelherbepin.github.io/fireflyiii-mcp/)**
 
 ## What you can ask
 
@@ -48,7 +52,7 @@ Add to your Claude MCP config (`.claude/mcp.json` or Claude Desktop `claude_desk
   "mcpServers": {
     "fireflyiii": {
       "command": "npx",
-      "args": ["-y", "@daften/fireflyiii-mcp"],
+      "args": ["-y", "@raphaelherbepin/fireflyiii-mcp"],
       "env": {
         "FIREFLY_URL": "https://your-firefly-instance.example.com",
         "FIREFLY_TOKEN": "your-personal-access-token-here"
@@ -60,25 +64,25 @@ Add to your Claude MCP config (`.claude/mcp.json` or Claude Desktop `claude_desk
 
 Your MCP client downloads and starts the server automatically on first use. No separate install step needed.
 
-**Claude Desktop users:** this stdio form is the recommended setup. Claude Desktop's config file does *not* accept HTTP servers — see the [Claude Desktop guide](https://daften.github.io/fireflyiii-mcp/guide/claude-desktop) if you need a remote setup.
+**Claude Desktop users:** this stdio form is the recommended setup. Claude Desktop's config file does *not* accept HTTP servers — see the [Claude Desktop guide](https://raphaelherbepin.github.io/fireflyiii-mcp/guide/claude-desktop) if you need a remote setup.
 
 ---
 
 ## Option 2: npm package — HTTP (OAuth or PAT)
 
-→ See the [HTTP/OAuth](https://daften.github.io/fireflyiii-mcp/guide/http-oauth) setup guide, or [HTTP/PAT](https://daften.github.io/fireflyiii-mcp/guide/http-pat) for headless callers (gateways, automation) that can't drive a browser-based OAuth flow.
+→ See the [HTTP/OAuth](https://raphaelherbepin.github.io/fireflyiii-mcp/guide/http-oauth) setup guide, or [HTTP/PAT](https://raphaelherbepin.github.io/fireflyiii-mcp/guide/http-pat) for headless callers (gateways, automation) that can't drive a browser-based OAuth flow.
 
 ---
 
 ## Option 3: Docker — HTTP (self-hosted)
 
-→ See [Docker setup guide](https://daften.github.io/fireflyiii-mcp/guide/docker) in the docs.
+→ See [Docker setup guide](https://raphaelherbepin.github.io/fireflyiii-mcp/guide/docker) in the docs.
 
 ---
 
 ## Option 4: Git checkout (development)
 
-→ See [Git checkout guide](https://daften.github.io/fireflyiii-mcp/guide/git-checkout) in the docs.
+→ See [Git checkout guide](https://raphaelherbepin.github.io/fireflyiii-mcp/guide/git-checkout) in the docs.
 
 ---
 
@@ -86,8 +90,8 @@ Your MCP client downloads and starts the server automatically on first use. No s
 
 Want to test unreleased changes from `main`? A nightly build is published automatically each night that `main` has changed. **These are unstable and not recommended for production.**
 
-- **npm:** `npm install @daften/fireflyiii-mcp@nightly` (or `npx @daften/fireflyiii-mcp@nightly`)
-- **Docker:** `docker pull ghcr.io/daften/fireflyiii-mcp:nightly`
+- **npm:** `npm install @raphaelherbepin/fireflyiii-mcp@nightly` (or `npx @raphaelherbepin/fireflyiii-mcp@nightly`)
+- **Docker:** `docker pull ghcr.io/raphaelherbepin/fireflyiii-mcp:nightly`
 
 A normal install (no tag) always resolves to the latest tagged release — `@latest` on npm and `:latest` on Docker are never moved to a nightly. To go back to a stable build, reinstall without the `@nightly` / `:nightly` tag.
 
@@ -95,19 +99,19 @@ A normal install (no tag) always resolves to the latest tagged release — `@lat
 
 ## Experimental Autocomplete Prompts
 
-→ See [Autocomplete prompts](https://daften.github.io/fireflyiii-mcp/reference/autocomplete) in the docs.
+→ See [Autocomplete prompts](https://raphaelherbepin.github.io/fireflyiii-mcp/reference/autocomplete) in the docs.
 
 ---
 
 ## Available Tools
 
-→ See the full [tool reference](https://daften.github.io/fireflyiii-mcp/reference/tools) in the docs (140 tools across 14 groups).
+→ See the full [tool reference](https://raphaelherbepin.github.io/fireflyiii-mcp/reference/tools) in the docs (207 tools across 20 groups).
 
 ---
 
 ## Filtering Tools
 
-→ See [Tool filtering](https://daften.github.io/fireflyiii-mcp/reference/filtering) in the docs.
+→ See [Tool filtering](https://raphaelherbepin.github.io/fireflyiii-mcp/reference/filtering) in the docs.
 
 ---
 
@@ -136,7 +140,62 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the development loop, tool-add checkl
 
 See [SECURITY.md](SECURITY.md) for the vulnerability disclosure policy.
 
+## What this fork adds
+
+Relative to [daften/fireflyiii-mcp](https://github.com/daften/fireflyiii-mcp):
+
+- **Field projection** — read tools accept a `fields` parameter (`compact` / `standard` / `full`, or an
+  explicit list), so listing transactions no longer returns all 73 split fields per row.
+- **Response size guard** — oversized list responses are truncated with an explicit `truncated` notice
+  stating how many items were omitted and how to get them, instead of silently overflowing the context.
+- **Server-side aggregation** — an `aggregates` tool group answers "spending by budget over 18 months"
+  without transferring the underlying transactions. Amounts are summed with exact decimal arithmetic.
+- **Complete API 6.5.5 coverage** — verified mechanically against the vendored OpenAPI spec by
+  `scripts/check-api-coverage.ts`, which also flags routes the code calls that the spec does not define.
+- **Security fixes** — `--read-only` no longer drops read-only tools whose names lack a recognised prefix;
+  the filter now derives from tool annotations rather than naming convention. Sensitive values are
+  redacted from debug output, and `403` responses carry an actionable message.
+
+## Measured
+
+Produced by `scripts/benchmark-context.ts` against a live Firefly III 6.5.5 instance holding 2 008
+transactions across 18 months.
+
+### Context cost per preset
+
+| Preset | Tools | `tools/list` |
+|--------|-------|--------------|
+| `minimal` | 19 | ~5,165 tokens |
+| `default` | 54 | ~13,178 tokens |
+| `budgeting` | 61 | ~14,709 tokens |
+| `insights` | 68 | ~14,312 tokens |
+| `automation` | 54 | ~13,677 tokens |
+| `full` | 207 | ~41,008 tokens |
+
+### Cost of answering a question
+
+| Question | Raw JSON:API | Upstream | `standard` | `compact` | Saved |
+|----------|--------------|----------|------------|-----------|-------|
+| One month of expenses | ~44,902 | ~39,584 | ~8,370 | **~4,710** | **-88.1%** |
+| A full page of transactions | ~90,628 | ~80,078 | ~17,008 | **~9,578** | **-88.0%** |
+
+### Cost of a question aggregation answers
+
+| Question | Reading the rows | Aggregating | Saved |
+|----------|------------------|-------------|-------|
+| Spending by budget, 18 months | ~191,600 (20 pages, compact) | **~339** | **-99.8%** |
+| Month-by-month per budget | ~191,600 (same rows, grouped by hand) | **~1,166** | **-99.4%** |
+
+_Token counts are estimates at four characters per token, measured against a live instance._
+
+The second table is the one the fork exists for. Answering "what did I spend per budget over the last
+eighteen months" by reading the transactions costs about 190 000 tokens — more than most context
+windows — and the model still has to do the arithmetic. Asking the server costs 339 tokens and the
+figures are exact to the cent.
+
 ## Acknowledgements
+
+Forked from [daften/fireflyiii-mcp](https://github.com/daften/fireflyiii-mcp) by Dieter Blomme, whose hand-written tool definitions, Zod schemas, MCP annotations and test suite are the foundation this fork builds on. Original work MIT licensed; the licence and attribution are preserved in [LICENSE](LICENSE).
 
 Feature comparison informed by [fabianonetto/mcp-server-firefly-iii](https://github.com/fabianonetto/mcp-server-firefly-iii) and [etnperlong/firefly-iii-mcp](https://github.com/etnperlong/firefly-iii-mcp).
 

@@ -19,6 +19,8 @@ src/tests
 
 # Docs and project meta (not needed at runtime)
 docs
+spec
+scripts
 CLAUDE.md
 CODE_OF_CONDUCT.md
 CONTRIBUTING.md

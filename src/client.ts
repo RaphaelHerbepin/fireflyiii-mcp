@@ -12,6 +12,24 @@ export class FireflyError extends Error {
   }
 }
 
+/**
+ * A request that exceeded the client timeout.
+ *
+ * Its own class, and it strips the query string, because the plain Error it replaces interpolated the
+ * full URL — so a timeout on `search_accounts?query=<IBAN>` wrote that IBAN into the message, and from
+ * there into stderr and any bug report. FireflyError had been stripping query strings from day one;
+ * this closes the same hole on the other path.
+ */
+export class FireflyTimeoutError extends Error {
+  constructor(
+    public readonly url: string,
+    public readonly timeoutMs: number,
+  ) {
+    super(`Request to ${url.split('?')[0]} timed out after ${timeoutMs}ms.`);
+    this.name = 'FireflyTimeoutError';
+  }
+}
+
 function parseFieldErrors(body: string): string | null {
   try {
     const parsed = JSON.parse(body) as { errors?: Record<string, string[]> };
@@ -56,13 +74,26 @@ export function formatError(err: unknown): string {
       return details ? `Bad request: ${details}` : 'Bad request — check your input parameters.';
     }
     if (err.status === 401) return 'Authentication failed. Check your FIREFLY_TOKEN.';
+    if (err.status === 403) {
+      return (
+        'Access denied (403). This endpoint requires Firefly III administrator rights. The users, ' +
+        'user-groups and configuration tools only work with an administrator account — an ordinary ' +
+        'personal access token will always get 403 here.'
+      );
+    }
     if (err.status === 404) return 'Resource not found.';
+    if (err.status === 429) {
+      return 'Too many requests (429). Firefly III is rate-limiting this token; wait a moment and retry.';
+    }
     if (err.status === 422) {
       const details = parseFieldErrors(err.body);
       return details ? `Validation failed: ${details}` : 'Invalid request parameters.';
     }
     if (err.status >= 500) return 'Firefly III server error. Try again later.';
     return `API error ${err.status}.`;
+  }
+  if (err instanceof FireflyTimeoutError) {
+    return `${err.message} The instance may be slow, unreachable, or the query too broad.`;
   }
   if (err instanceof Error) return err.message;
   return 'An unknown error occurred.';
@@ -115,7 +146,7 @@ export class FireflyClient {
       response = await fetch(url, { ...init, signal: controller.signal });
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') {
-        throw new Error(`Request to ${url} timed out after ${this.timeoutMs}ms.`);
+        throw new FireflyTimeoutError(url, this.timeoutMs);
       }
       throw err;
     } finally {
@@ -154,8 +185,10 @@ export class FireflyClient {
     return this.request<T>('PUT', this.buildUrl(path), body);
   }
 
-  async delete(path: string): Promise<void> {
-    await this.request<void>('DELETE', this.buildUrl(path));
+  /** `params` is needed by endpoints such as `DELETE /data/destroy`, which takes a required `objects`
+   *  query parameter. Optional, so existing call sites are unaffected. */
+  async delete(path: string, params?: QueryParams): Promise<void> {
+    await this.request<void>('DELETE', this.buildUrl(path, params));
   }
 
   async postBinary(path: string, body: Uint8Array): Promise<void> {

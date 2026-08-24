@@ -1,0 +1,12 @@
+{
+  // Scripts live outside src/, which the main tsconfig scopes to (rootDir "src"), so they would
+  // otherwise never be typechecked. They are run through tsx and never emitted — hence noEmit.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": ".",
+    "declaration": false,
+    "declarationMap": false
+  },
+  "include": ["scripts/**/*.ts", "src/**/*.ts"]
+}

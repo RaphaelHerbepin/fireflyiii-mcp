@@ -10,7 +10,7 @@ For those cases, omit `FIREFLY_OAUTH_CLIENT_ID` and the server runs in **PAT-onl
 
 ```bash
 FIREFLY_URL=https://your-firefly-instance.example.com \
-npx @daften/fireflyiii-mcp --transport http
+npx @raphaelherbepin/fireflyiii-mcp --transport http
 ```
 
 No OAuth client registration needed. To use a different port, add `--port 4000`.

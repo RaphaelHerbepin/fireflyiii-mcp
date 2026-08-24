@@ -27,7 +27,7 @@ concurrency:
 jobs:
   release:
     # Dependabot security merges only. Merges are merge commits, so the
-    # subject reads "Merge pull request #N from daften/dependabot/<branch>";
+    # subject reads "Merge pull request #N from RaphaelHerbepin/dependabot/<branch>";
     # creating a branch under that name requires push access to this repo (a
     # fork PR would read "from <fork-owner>/..."), which is a stronger gate
     # than commit authorship — a commit's author field is just a git config
@@ -36,7 +36,7 @@ jobs:
     # own chore(release): commits do not match.
     if: >
       github.event_name == 'workflow_dispatch' ||
-      contains(github.event.head_commit.message, 'from daften/dependabot/')
+      contains(github.event.head_commit.message, 'from RaphaelHerbepin/dependabot/')
     runs-on: ubuntu-latest
     permissions: {}
     steps:

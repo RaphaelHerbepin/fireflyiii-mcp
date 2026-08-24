@@ -9,7 +9,7 @@ import {
   unwrapList,
   unwrapSingle,
 } from '../transform.js';
-import { DELETE_ANNOTATIONS, READ_ANNOTATIONS, UPDATE_ANNOTATIONS, WRITE_ANNOTATIONS } from './_annotations.js';
+import { DELETE_ANNOTATIONS, READ_ANNOTATIONS, UPDATE_ANNOTATIONS } from './_annotations.js';
 import { defineTool } from './_helpers.js';
 
 export async function fetchObjectGroups(
@@ -22,14 +22,6 @@ export async function fetchObjectGroups(
 
 export async function fetchObjectGroup(client: FireflyClient, id: string): Promise<UnwrappedSingle> {
   const response = await client.get<JsonApiSingleResponse>(`/object-groups/${id}`);
-  return unwrapSingle(response);
-}
-
-export async function createObjectGroup(
-  client: FireflyClient,
-  params: { title: string; order?: number },
-): Promise<UnwrappedSingle> {
-  const response = await client.post<JsonApiSingleResponse>('/object-groups', params);
   return unwrapSingle(response);
 }
 
@@ -98,21 +90,6 @@ export function registerObjectGroupTools(server: McpServer, client: FireflyClien
       annotations: READ_ANNOTATIONS,
     },
     ({ id }) => fetchObjectGroup(client, id as string),
-  );
-
-  defineTool(
-    server,
-    'create_object_group',
-    {
-      title: 'Create Object Group',
-      description: 'Create a new object group to organise accounts and piggy banks.',
-      inputSchema: {
-        title: z.string().describe('Object group title'),
-        order: z.number().int().positive().optional().describe('Display order'),
-      },
-      annotations: WRITE_ANNOTATIONS,
-    },
-    (params) => createObjectGroup(client, params as Parameters<typeof createObjectGroup>[1]),
   );
 
   defineTool(

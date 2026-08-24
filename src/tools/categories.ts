@@ -1,4 +1,3 @@
-import { completable } from '@modelcontextprotocol/sdk/server/completable.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import type { FireflyClient } from '../client.js';
@@ -12,15 +11,8 @@ import {
 } from '../transform.js';
 import type { QueryParams } from '../types.js';
 import { DELETE_ANNOTATIONS, READ_ANNOTATIONS, UPDATE_ANNOTATIONS, WRITE_ANNOTATIONS } from './_annotations.js';
-import {
-  AUTOCOMPLETE_FETCH_LIMIT,
-  AUTOCOMPLETE_MAX_SUGGESTIONS,
-  createTtlCache,
-  dateSchema,
-  debugLog,
-  defineTool,
-  parseId,
-} from './_helpers.js';
+import { withEntityCompletion } from './_completions.js';
+import { AUTOCOMPLETE_FETCH_LIMIT, createTtlCache, dateSchema, defineTool, parseId } from './_helpers.js';
 
 export async function fetchCategories(
   client: FireflyClient,
@@ -40,6 +32,11 @@ export async function fetchCategoryTransactions(
   if (params.end) query.end = params.end;
   const response = await client.get<JsonApiListResponse>(`/categories/${categoryId}/transactions`, query);
   return unwrapList(response);
+}
+
+/** One category by ID. */
+export async function fetchCategory(client: FireflyClient, id: string): Promise<UnwrappedSingle> {
+  return unwrapSingle(await client.get<JsonApiSingleResponse>(`/categories/${id}`));
 }
 
 export async function createCategory(
@@ -90,24 +87,15 @@ export function registerCategoryTools(server: McpServer, client: FireflyClient):
       fetchCategories(client, { page: page as number | undefined, limit: limit as number | undefined }),
   );
 
-  const categoryIdSchema = completable(
+  const categoryIdSchema = withEntityCompletion(
     z.string().describe('Category ID — use get_categories to find valid IDs'),
-    async (value) => {
-      debugLog(`[Autocomplete] Category search input: "${value}"`);
-      try {
-        const categories = await categoriesCache.get(client.cacheKey(), () =>
-          fetchCategories(client, { limit: AUTOCOMPLETE_FETCH_LIMIT }),
-        );
-        const suggestions = categories.data
-          .map((c) => `${c.id} (${c.name ?? ''})`)
-          .filter((label) => label.toLowerCase().includes(value.toLowerCase()))
-          .slice(0, AUTOCOMPLETE_MAX_SUGGESTIONS);
-        debugLog(`[Autocomplete] Category suggestions found: ${suggestions.length}`);
-        return suggestions;
-      } catch (err) {
-        debugLog('[Autocomplete Error - Category]:', err);
-        return [];
-      }
+    client,
+    'categories',
+    {
+      // Older Firefly versions have no /autocomplete/* endpoints; keep the listing path as a fallback.
+      list: () =>
+        categoriesCache.get(client.cacheKey(), () => fetchCategories(client, { limit: AUTOCOMPLETE_FETCH_LIMIT })),
+      label: (item: Record<string, unknown>) => String(item.name ?? ''),
     },
   );
 
@@ -134,6 +122,18 @@ export function registerCategoryTools(server: McpServer, client: FireflyClient):
         page: page as number | undefined,
         limit: limit as number | undefined,
       }),
+  );
+
+  defineTool(
+    server,
+    'get_category',
+    {
+      title: 'Get Category',
+      description: 'Get one category by ID, with what has been spent and earned in it.',
+      inputSchema: { id: categoryIdSchema },
+      annotations: READ_ANNOTATIONS,
+    },
+    ({ id }) => fetchCategory(client, parseId(id as string)),
   );
 
   defineTool(

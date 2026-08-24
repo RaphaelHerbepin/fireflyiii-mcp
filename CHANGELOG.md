@@ -7,6 +7,259 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — tools that were calling routes Firefly III 6.5.5 no longer has
+
+Verified against a live Firefly III 6.5.5 instance on 2026-08-21, and pinned by
+`src/tests/phantom-routes.test.ts` so a release restoring any of them is noticed. Four tools were
+retargeted, four removed:
+
+**Retargeted**
+
+- `update_budget_limit` and `delete_budget_limit` called `/budget-limits/{id}`, which returns 404.
+  Limits are addressed under their budget, so both tools now take a `budgetId` as well as a `limitId`.
+  **This changes their parameters.**
+- `get_exchange_rate` called `GET /exchange-rates/by-currencies/{from}/{to}`, which exists for POST
+  only. It now calls `GET /exchange-rates/{from}/{to}`.
+- `create_piggy_bank` sent `account_id`, which 6.5.5 rejects with 422: it requires an `accounts[]`
+  array and a currency. The tool still takes one account id — that is what callers have — and builds
+  the array itself. It also gained optional `currency_code` and `object_group_title`. The spec is
+  self-contradictory here, listing `account_id` as required while never declaring it as a property,
+  so this was settled against a live instance rather than read off the document.
+
+**Removed** — no working route exists for any of these:
+
+- `get_net_worth_summary` (`/summary/net-worth`, 404). Derive net worth from `get_summary` instead.
+- `create_object_group` (`POST /object-groups`, 405). Object groups are created implicitly, by setting
+  `object_group_title` on a piggy bank or bill — `create_piggy_bank` now accepts it.
+- `create_piggy_bank_event` and `delete_piggy_bank_event` (405 / 404). Piggy bank events are produced
+  by transfers, not managed directly. `get_piggy_bank_events` still works.
+
+### Changed — BREAKING
+
+- **Read tools now return a reduced set of fields by default.** `get_transactions` and the other list
+  tools default to `fields: "compact"`; single-item reads such as `get_transaction` default to
+  `"standard"`. Pass `fields: "full"` for the previous behaviour, or an explicit array of field names.
+  `id` is always included.
+
+  This is a deliberate break, and the reason the fork exists. Measured against a live Firefly III
+  6.5.5 instance, fifty transactions cost ~41 200 tokens because each split carries 77 fields — of
+  which sixteen are `sepa_*` and ten restate the amount in another currency. The same fifty
+  transactions cost ~5 000 tokens compact: **79% smaller through the tool handler, 88% against the
+  raw payload.** A transaction goes from ~823 tokens to ~100. Analysing a full history stops being
+  impossible.
+
+  Affected tools are listed in `src/tools/_projection.ts`. Tools returning fixed-size payloads,
+  aggregate shapes, CSV or binary content are untouched.
+
+- Oversized list responses are truncated with a structured `truncated` notice giving the number
+  returned, the number omitted, and how to get the rest. A silently truncated result is worse than an
+  error: the caller concludes on partial data believing it has everything.
+
+### Added
+
+- The Claude Desktop guide now explains both settings that decide what an assistant can see and do:
+  which preset to pick, and what `MCP_READ_ONLY` withholds, with the tool counts for each. It also
+  spells out how to turn write access on — including that Claude Desktop must be quit entirely, since
+  closing the window leaves the server process running with its old configuration.
+- `docs/reference/filtering.md` says which preset to choose rather than only listing what exists, and
+  gives the read-only and full-access counts side by side.
+- `scripts/benchmark-context.ts` measures what the server costs a context window and what the two
+  headline features save, against a live instance. Its output is in the README. It prints markdown to
+  stdout rather than editing the README itself: a script that rewrites documentation in CI is a script
+  nobody reviews.
+- `src/tests/coverage-gaps.test.ts`: direct tests for 26 exported fetch functions that no test
+  reached. A coverage pass found them — mostly late additions in groups whose suites concentrated on
+  the tools carrying the risky logic. "The interesting parts are tested" is how a function that builds
+  the wrong URL survives to production, so each now asserts the path it builds and the shape it
+  returns. Function coverage 61% → 66%; every exported function in `src/tools/` is now exercised.
+- `src/tests/integration-fork.test.ts` checks the fork's own behaviour against a live instance —
+  projection actually reduces payloads, `--read-only` keeps the tools it used to drop, and the
+  aggregates match the seed manifest to the cent. Gated on `FIREFLY_SEEDED` separately from
+  `FIREFLY_INTEGRATION`, so the tests needing 2 000 seeded transactions do not fail against an empty
+  CI instance.
+
+- **Complete API 6.5.5 coverage: 230/230 operations**, verified mechanically by
+  `scripts/check-api-coverage.ts` against the vendored spec, with zero phantom routes. One documented
+  exception: `getCron` takes the instance's CLI token, and a tool parameter is a text field in a
+  conversation transcript — exposing it would invite pasting a server secret into a chat. Firefly's
+  cron endpoint is for the machine's scheduler.
+
+- **An `admin` tool group** (17 tools): users, administrations, instance configuration, preferences,
+  and `finish_batch`. Excluded from every preset but `full` — on a single-user instance they occupy
+  context to no purpose. Each description says the owner role is needed, so a 403 is not a mystery.
+  `get_configuration` returns the editable settings only by default: the full response is ~10 000
+  tokens, of which the search-operator catalogue alone is 17 000 characters, and nobody asking for
+  "the configuration" means that. Reduced by 97%.
+
+- **An `admin-destructive` group** with `destroy_data` and `purge_data`, **excluded from every preset
+  including `full`**. Reaching them takes `--groups admin-destructive`, which nobody types by
+  accident. Both require `confirm: "DESTROY"` exactly — enforced in the schema and re-checked in the
+  handler, because a client that skips schema validation would otherwise turn a typo into an
+  irreversible deletion.
+
+- `get_attachments_for`, one tool covering the seven endpoints that list attachments per record type.
+- Eleven single-record getters and sub-resources that were missing: `get_bill`, `get_bill_rules`,
+  `get_category`, `get_piggy_bank`, `get_account_piggy_banks`, `get_tag`,
+  `get_transaction_by_journal`, `delete_transaction_journal`, `get_transaction_piggy_bank_events`,
+  and two bulk exchange-rate tools.
+
+- Six link-type tools, completing that group: `get_link_type`, `get_link_type_transactions`,
+  `create_link_type`, `update_link_type`, `delete_link_type` and `get_all_transaction_links`.
+  `get_link_type_transactions` answers the question link types exist for — "show me everything marked
+  as a refund", or every instalment of a split payment — which nothing else could answer.
+  `delete_link_type` states that the links using it go too: the transactions survive, the
+  relationships between them do not.
+
+- **An `exchange-rates` tool group** (10 tools) covering both ways Firefly III addresses a rate: by
+  its own ID, and by currency pair with an optional date. Both are exposed because they answer
+  different questions — "change this rate" against "what was EUR/USD on the 3rd" — and collapsing one
+  onto the other would cost a lookup on every call. Deleting a whole pair and deleting one date are
+  separate tools, since they differ by one path segment and a great deal of data.
+- `get_primary_currency`, and `get_currency_related` for the seven sub-resources under a currency
+  (accounts, bills, budget limits, recurrences, rules, available budgets, transactions). One
+  parameterised tool rather than seven: multi-currency is a corner case for most instances, and seven
+  permanent tool definitions is a poor trade against the context they occupy.
+  `available-budgets` returns a server error on Firefly III 6.5.5 — an upstream defect, noted in the
+  tool description so the failure is not mistaken for a bad request.
+
+- **A `webhooks` tool group** (13 tools): create, read, update and delete webhooks, inspect the
+  messages they queue and each delivery attempt, flush the queue, and replay one transaction through
+  a webhook. Included in the `automation` preset.
+
+  Two things a live instance settled that the spec could not. The payload uses **plural** `triggers`,
+  `responses` and `deliveries`; the spec's `required` block names them in the singular and Firefly
+  rejects that form outright. And updates replace rather than patch — all three must be supplied even
+  to toggle `active` — so the tool schema requires them instead of letting callers hit an
+  unpredictable 422.
+
+  Webhooks are **disabled by default**, and every route answers 404 until
+  `configuration.allow_webhooks` is switched on by a user with the owner role. A 404 meaning "switched
+  off" rather than "not supported" is easy to misread, so the tool descriptions say so.
+
+- **`search_entities`**, one tool over Firefly III's seventeen `/autocomplete/*` endpoints. Resolving
+  "Coopérative U" to an account ID costs 602 characters instead of listing every account. Exposing
+  seventeen separate tools would have spent seventeen tool definitions in every `tools/list` response
+  to answer a question nobody asks directly.
+- Four budget tools that were missing: `get_budget`, `get_all_budget_limits`, `get_budget_limit` and
+  `get_budget_limit_transactions`. The last one answers "what consumed this month's budget" rather
+  than "everything ever charged to this budget", which is the question a monthly review asks.
+
+- **A new `aggregates` tool group** that totals on the server instead of shipping rows. Included in the
+  `default`, `budgeting`, `insights` and `full` presets.
+
+  | Tool | Answers |
+  |------|---------|
+  | `get_transaction_aggregate` | totals by category, budget, month, type, account or tag |
+  | `get_monthly_breakdown` | a month-by-month matrix per budget or category |
+  | `get_budget_performance` | limit, spent, remaining, share of expenses, per budget |
+  | `get_spending_ratios` | a 50/30/20-style split across caller-defined budget groups |
+  | `get_account_balance_history` | end-of-period balances per account |
+  | `search_uncategorized` | how much spending has no budget or category |
+
+  Measured against a seeded 2 008-transaction instance: an 18-month per-budget breakdown costs **338
+  tokens**, where fifty raw transactions cost ~41 000. Figures match the generator's own totals to the
+  cent across 1 998 splits.
+
+- `src/redact.ts`, applied to everything `debugLog` writes. Masking is by key name first and pattern
+  second: a regex broad enough to catch account numbers by shape also eats transaction ids and
+  amounts, which makes debug output useless. Patterns are reserved for values embedded in free text —
+  IBANs, JWTs and bearer credentials in an error message or URL.
+- Startup warnings on the HTTP transport: whether write tools are enabled, that the server performs
+  no authentication of its own (off-loopback only, so local runs stay quiet), and whether the
+  irreversible admin tools are loaded.
+- `src/money.ts`: exact decimal arithmetic in BigInt, with the scale read from the amount string
+  rather than from `currency_decimal_places` — Firefly declares 0 to 10 places depending on currency,
+  and that field is not present on every split. No new dependency.
+
+- Vendored the Firefly III OpenAPI spec 6.5.5 under `spec/`, with its source URL, retrieval date and
+  SHA-256 recorded in `spec/README.md`. The spec is the authoritative reference for every tool, and
+  checking it in makes any change to it a reviewable diff rather than a silent shift in CI.
+- `scripts/lib/parse-spec.ts` extracts the spec's 230 operations without pulling in a YAML parser, and
+  asserts that operation and path counts still match. A reformatted upstream spec now fails loudly
+  instead of yielding a coverage report derived from a file the parser no longer understands.
+- `tsconfig.scripts.json`, plus `scripts/` in Biome's scope: files under `scripts/` were previously
+  neither typechecked (the main tsconfig is rooted at `src`) nor linted. `npm run check` now covers them.
+- `scripts/check-api-coverage.ts` checks the tool code against the vendored spec in **both**
+  directions, and runs in CI as a new `contracts` job. Asking only "did we miss an operation?" is half
+  the question; asking "are we calling a route the spec does not define?" immediately surfaced seven
+  such routes inherited from upstream, four of which were previously unknown. Starting position:
+  **132/230 operations covered, 7 phantom routes.**
+- The check is relative to a recorded baseline, mirroring the repo's existing relative dependency
+  audit. An absolute check would be red from the day it lands until the last of 98 operations is
+  implemented, and a check that is permanently red stops being read. It fails on regression, and also
+  when a baseline entry has been resolved but not removed, so the debt list cannot go stale.
+- Routes reached through table-driven helpers (charts, grouped insights, no-X insights, CSV exports)
+  are resolved by importing those tables rather than guessing. A call the scanner cannot resolve and no
+  table claims is a hard error: a route scanner whose default failure mode is a silent false negative
+  is worse than none, because it reports green over unchecked code.
+- `scripts/check-tool-counts.sh` verifies every hardcoded tool count in the documentation against
+  what the server actually registers, and checks `docs/reference/tools.md` lists exactly the tools
+  that exist — catching both a tool added without a doc row and a row for a tool that no longer
+  exists. Counts are derived by registering against a stub server, never by grepping: 24 tools are
+  generated by loops, so a textual count reads 116 where the server registers 140. Matching is by
+  pattern rather than line number, and `--fix` rewrites the numeric counters. It also reports the
+  `tools/list` size per preset, warning past a 25 000-token budget.
+- `docker-compose.dev.yml`, `scripts/seed-dev-data.ts` and a [local dev stack guide](docs/guide/dev-stack.md):
+  a disposable Firefly III pinned to 6.5.5, and ~2 000 seeded transactions across 18 months. The seeder
+  is deterministic (fixed seed) and writes the totals it generated, in integer cents, to
+  `spec/seed-manifest.json`. Aggregation can then be checked against an oracle computed independently
+  of the API — a test that re-sums what the API returned validates a wrong total just as happily as a
+  right one. `scripts/ci-create-token.sh` now takes `CONTAINER` so it serves both stacks.
+- `src/tests/phantom-routes.test.ts` probes, against a live instance, the routes this server calls
+  that the spec does not define, and pins the results so a Firefly version restoring one shows up as
+  a failing test rather than a tool that quietly starts working again.
+- `npm run verify` runs the full gate (lint, both typechecks, tests, API coverage, tool counts).
+  `npm run check` stays as-is because it is the pre-commit hook and must remain fast.
+
+### Fixed
+
+- **Starting the server with no options no longer exposes the irreversible tools.** The default path
+  registered every group literally, so `destroy_data` and `purge_data` were available on a server
+  started with no arguments, even though the `full` preset excludes them. It now defaults to `full`.
+- **`--read-only` no longer drops ten read-only tools.** The filter inferred safety from the tool's
+  name — `get_`, `search_`, `test_` — so all nine `export_*` tools and `download_attachment` were
+  removed from every read-only server despite carrying `READ_ANNOTATIONS`. It now reads
+  `annotations.readOnlyHint`, which every tool already declared. A tool with no hint throws at
+  registration rather than being guessed either way: defaulting to false hides a read tool,
+  defaulting to true exposes a write one, and both fail silently.
+- `trigger_rule` and `trigger_rule_group` declared bare `{ openWorldHint: true }` annotations with no
+  `readOnlyHint`. They apply rule actions to real transactions; they are now `WRITE_ANNOTATIONS`.
+  Their names happened to keep them out of read-only mode, but nothing said they wrote.
+- `--read-only` now filters prompts and resources too, against a closed allow-list. The proxy
+  intercepted `registerTool` only, so a prompt that wrote would have passed straight through.
+- Timeout errors no longer leak the query string. The message interpolated the full URL, so a timeout
+  on `search_accounts?query=<IBAN>` wrote that IBAN to stderr — while `FireflyError` had been
+  stripping query strings all along. Timeouts are now `FireflyTimeoutError` and strip it too.
+- `403` and `429` responses carry an actionable message instead of falling through to `API error N.`
+  The admin endpoints return 403 routinely on an ordinary token.
+- `.gitignore` now ignores every `.env.*` variant and re-admits the templates, instead of listing
+  each real file by name. `.env.dev` was introduced with the dev stack and was not covered — a token
+  pasted into it would have been committable. Listing files individually means the protection depends
+  on remembering, which is the part that fails.
+- `FireflyClient.delete` accepts query parameters. `DELETE /data/destroy` requires an `objects`
+  parameter that the spec documents nowhere — the instance returns 422 without it.
+
+### Changed
+
+- Argument autocomplete for accounts, budgets and categories now queries Firefly's autocomplete
+  endpoints instead of fetching up to 1 000 records per keystroke and filtering them in memory. That
+  is a much smaller request, it stops truncating on instances with more than a thousand accounts, and
+  matching is Firefly's own — so searching an account by IBAN or account number now works, where the
+  local filter would have discarded the hit because neither appears in the visible label. A 404 falls
+  back to the old listing path, so instances predating these endpoints keep working.
+- `src/tests/tool-filter.test.ts` no longer asserts absolute tool counts. Those live in
+  `check-tool-counts.sh`, which derives them; asserting them in tests too meant every new tool broke
+  six unrelated assertions, and the habit became updating the number rather than checking it. The
+  tests now assert structural invariants instead — every group contributes tools, no tool belongs to
+  two groups, `full` is exactly the union of all groups, presets nest, nothing registers twice.
+  These stay true as the server grows, and caught a duplicate-registration bug the counts did not.
+- **This repository is now a fork of [daften/fireflyiii-mcp](https://github.com/daften/fireflyiii-mcp).**
+  The npm package is published as `@raphaelherbepin/fireflyiii-mcp` and the container image as
+  `ghcr.io/raphaelherbepin/fireflyiii-mcp`. Upstream remains credited as the original author, and the
+  MIT licence and attribution are unchanged. Release, back-merge and auto-release workflows now target
+  this repository, and each is guarded by a `github.repository` check so a downstream fork can never
+  publish under this namespace by accident.
+
 ## [0.4.2] - 2026-08-04
 
 ### Security

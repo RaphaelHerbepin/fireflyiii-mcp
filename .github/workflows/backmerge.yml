@@ -20,7 +20,7 @@ jobs:
     permissions: {}
     env:
       GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-      REPO: daften/fireflyiii-mcp
+      REPO: RaphaelHerbepin/fireflyiii-mcp
     steps:
       - name: Create or update back-merge PR, enable auto-merge
         run: |

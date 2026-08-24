@@ -345,6 +345,49 @@ export async function tryListen(httpServer: http.Server, host: string, port: num
   });
 }
 
+/**
+ * Warns, on stderr, about what an HTTP deployment exposes.
+ *
+ * Separate from startHttpServer and called from the entry point: that keeps a seven-parameter
+ * signature from growing an eighth, and makes each warning testable on its own.
+ *
+ * Deliberately warnings and not refusals. Forcing read-only would be a breaking change nobody asked
+ * for, and refusing to bind off-loopback would break every container deployment. The goal is that
+ * nobody discovers what they exposed after the fact.
+ */
+export function warnAboutHttpExposure(
+  options: { readOnly?: boolean; groups?: readonly string[] },
+  host: string,
+): string[] {
+  const warnings: string[] = [];
+
+  if (!options.readOnly) {
+    warnings.push(
+      'Warning: write tools are ENABLED on this HTTP endpoint. Anyone who reaches it with a valid ' +
+        'Firefly III token can create, modify and permanently delete financial records.\n' +
+        '  Pass --read-only (or MCP_READ_ONLY=true) to serve a read-only surface.',
+    );
+  }
+
+  if (classifyHost(host) === 'non-loopback') {
+    warnings.push(
+      'Warning: this server performs no authentication of its own — it forwards whatever bearer token ' +
+        'it is given to Firefly III.\n' +
+        '  Do not expose it to the public internet without a reverse proxy that authenticates callers.',
+    );
+  }
+
+  if (options.groups?.includes('admin-destructive')) {
+    warnings.push(
+      'Warning: the admin-destructive group is enabled. purge_data and destroy_data can irreversibly ' +
+        'erase your Firefly III data, and there is no undo.',
+    );
+  }
+
+  for (const warning of warnings) process.stderr.write(`${warning}\n`);
+  return warnings;
+}
+
 export async function startHttpServer(
   createMcpServer: () => McpServer,
   host: string,

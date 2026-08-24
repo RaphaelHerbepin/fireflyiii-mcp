@@ -1,7 +1,7 @@
 {
-  "name": "@daften/fireflyiii-mcp",
+  "name": "@raphaelherbepin/fireflyiii-mcp",
   "version": "0.4.2",
-  "description": "MCP server for Firefly III personal finance manager",
+  "description": "MCP server for Firefly III personal finance manager \u2014 fork with field projection, server-side aggregation and full API 6.5.5 coverage",
   "type": "module",
   "bin": {
     "fireflyiii-mcp": "dist/index.js"
@@ -18,13 +18,17 @@
     "prepublishOnly": "npm run build",
     "prepare": "simple-git-hooks",
     "dev": "dotenv -e .env -- tsx src/index.ts",
-    "format": "biome format --write src/",
-    "lint": "biome check src/",
-    "check": "biome ci src/ && tsc --noEmit && vitest run",
+    "format": "biome format --write src/ scripts/",
+    "lint": "biome check src/ scripts/",
+    "check": "biome ci src/ scripts/ && tsc --noEmit && tsc -p tsconfig.scripts.json && vitest run",
+    "check:coverage": "tsx scripts/check-api-coverage.ts",
+    "check:counts": "bash scripts/check-tool-counts.sh",
+    "verify": "npm run check && npm run check:coverage && npm run check:counts",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "test:integration": "dotenv -e .env.test -- vitest run src/tests/integration.test.ts",
+    "benchmark": "dotenv -e .env.dev -- tsx scripts/benchmark-context.ts",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs"
@@ -37,7 +41,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/daften/fireflyiii-mcp.git"
+    "url": "https://github.com/RaphaelHerbepin/fireflyiii-mcp.git"
   },
   "keywords": [
     "firefly-iii",
@@ -46,10 +50,13 @@
     "model-context-protocol",
     "claude"
   ],
-  "homepage": "https://github.com/daften/fireflyiii-mcp",
-  "author": "Dieter Blomme <dieterblomme@gmail.com>",
+  "homepage": "https://github.com/RaphaelHerbepin/fireflyiii-mcp",
+  "author": "Rapha\u00ebl Herbepin",
+  "contributors": [
+    "Dieter Blomme <dieterblomme@gmail.com> (original author)"
+  ],
   "bugs": {
-    "url": "https://github.com/daften/fireflyiii-mcp/issues"
+    "url": "https://github.com/RaphaelHerbepin/fireflyiii-mcp/issues"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",

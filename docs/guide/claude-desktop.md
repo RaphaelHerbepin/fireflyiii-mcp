@@ -18,6 +18,77 @@ The `{"type": "http", "url": "..."}` form is **Claude Code** syntax. Verified ag
 
 If the machine running Claude Desktop can reach Firefly III, use [npm + stdio](/guide/stdio). Nothing on this page improves on it.
 
+## Choosing a mode
+
+Two settings decide what Claude can see and do. Both go in the `env` block of your
+`claude_desktop_config.json` entry.
+
+### `MCP_PRESET` — how many tools Claude loads
+
+Every tool definition costs context before Claude makes a single call, so loading all 207 is rarely
+the right answer. Pick by what you actually ask about:
+
+| Preset | Tools | Cost | Choose it when |
+|--------|-------|------|----------------|
+| `minimal` | 19 | ~5 200 tokens | You only ask about accounts and transactions |
+| `default` | 54 | ~13 200 tokens | General use: adds budgets, categories, bills, aggregates |
+| **`budgeting`** | **61** | **~14 700 tokens** | **Recommended.** `default` plus savings goals |
+| `insights` | 68 | ~14 300 tokens | Analysis-heavy: swaps budgets and bills for the full report suite |
+| `automation` | 54 | ~13 700 tokens | You maintain rules, recurring transactions and webhooks |
+| `full` | 207 | ~41 000 tokens | Finding out what exists. Not for daily use. |
+
+Every preset includes `search_entities`, which resolves a name to an ID without listing everything —
+so Claude can find "Coopérative U" whatever else is loaded.
+
+`full` spends roughly 41 000 tokens of every conversation restating tools you will not call. Use it
+once to explore, then switch back.
+
+### `MCP_READ_ONLY` — whether Claude can change anything
+
+With `MCP_READ_ONLY=true`, write tools are **not registered at all** — Claude cannot call them because
+it never learns they exist. This is stronger than instructing it not to.
+
+| Preset | Read-only | Full access | Write tools withheld |
+|--------|-----------|-------------|----------------------|
+| `minimal` | 10 | 19 | 9 |
+| `default` | 33 | 54 | 21 |
+| `budgeting` | 37 | 61 | 24 |
+| `insights` | 53 | 68 | 15 |
+| `automation` | 26 | 54 | 28 |
+| `full` | 127 | 207 | 80 |
+
+**Start read-only.** Spend a few days asking questions before letting anything write to your
+accounting. Reading is where most of the value is, and it cannot go wrong.
+
+### Turning on write access
+
+Remove the `MCP_READ_ONLY` line from your config — or set it to `false` — then **quit Claude Desktop
+completely** (⌘Q, not just closing the window) and reopen it. The server only reads its configuration
+at startup, so closing the window changes nothing.
+
+```json
+{
+  "mcpServers": {
+    "firefly": {
+      "command": "node",
+      "args": ["/path/to/fireflyiii-mcp/dist/index.js"],
+      "env": {
+        "FIREFLY_URL": "https://firefly.example.com",
+        "FIREFLY_TOKEN": "your-personal-access-token",
+        "MCP_PRESET": "budgeting"
+      }
+    }
+  }
+}
+```
+
+With write access on, Claude can create, edit and delete transactions, accounts, budgets and
+categories. It cannot reach `destroy_data` or `purge_data` — those need `--groups admin-destructive`
+naming them explicitly, and no preset includes them.
+
+To confirm which mode is live, ask Claude: *"which Firefly tools do you have?"* A read-only server
+offers nothing whose name starts with `create_`, `update_` or `delete_`.
+
 ## Option 2: Custom connector (OAuth)
 
 The only setup where no client device stores a long-lived credential. Requires this server to be reachable **from the public internet** — a custom connector is driven by Anthropic's backend, not by the Claude app on your machine.

@@ -14,7 +14,7 @@ set -euo pipefail
 VERSION="$1"
 BULLET=$(printf '%s\n' "$2" | head -n 1)
 DATE=$(date -u +%Y-%m-%d)
-REPO="https://github.com/daften/fireflyiii-mcp"
+REPO="https://github.com/RaphaelHerbepin/fireflyiii-mcp"
 
 case "$VERSION" in
   [0-9]*.[0-9]*.[0-9]*) ;;
