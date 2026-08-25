@@ -1,10 +1,9 @@
 # MCP server for Firefly III
 
-[![npm version](https://img.shields.io/npm/v/@raphaelherbepin/fireflyiii-mcp.svg)](https://www.npmjs.com/package/@raphaelherbepin/fireflyiii-mcp)
-[![npm downloads](https://img.shields.io/npm/dm/@raphaelherbepin/fireflyiii-mcp.svg)](https://www.npmjs.com/package/@raphaelherbepin/fireflyiii-mcp)
 [![CI](https://github.com/RaphaelHerbepin/fireflyiii-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/RaphaelHerbepin/fireflyiii-mcp/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Documentation](https://img.shields.io/badge/docs-raphaelherbepin.github.io-blue)](https://raphaelherbepin.github.io/fireflyiii-mcp/)
+[![API coverage](https://img.shields.io/badge/Firefly%20III%20API%206.5.5-230%2F230-brightgreen)](spec/coverage-exceptions.json)
+[![Tools](https://img.shields.io/badge/tools-207%20across%2020%20groups-blue)](docs/reference/tools.md)
 
 > **This is a fork of [daften/fireflyiii-mcp](https://github.com/daften/fireflyiii-mcp)** by Dieter Blomme, MIT licensed.
 > It adds field projection, server-side aggregation, complete Firefly III API 6.5.5 coverage, and a set of
@@ -12,7 +11,7 @@
 
 An [MCP (Model Context Protocol)](https://modelcontextprotocol.io) server that connects any MCP-compatible AI assistant to your [Firefly III](https://www.firefly-iii.org) personal finance instance. Ask your AI assistant questions about your finances in natural language.
 
-📖 **[Full documentation → raphaelherbepin.github.io/fireflyiii-mcp](https://raphaelherbepin.github.io/fireflyiii-mcp/)**
+📖 **Documentation:** [tool reference](docs/reference/tools.md) · [choosing a preset](docs/reference/filtering.md) · [Claude Desktop setup](docs/guide/claude-desktop.md) · [local dev stack](docs/guide/dev-stack.md)
 
 ## What you can ask
 
@@ -117,25 +116,25 @@ Add to your Claude MCP config (`.claude/mcp.json` or Claude Desktop `claude_desk
 
 Your MCP client downloads and starts the server automatically on first use. No separate install step needed.
 
-**Claude Desktop users:** this stdio form is the recommended setup. Claude Desktop's config file does *not* accept HTTP servers — see the [Claude Desktop guide](https://raphaelherbepin.github.io/fireflyiii-mcp/guide/claude-desktop) if you need a remote setup.
+**Claude Desktop users:** this stdio form is the recommended setup. Claude Desktop's config file does *not* accept HTTP servers — see the [Claude Desktop guide](docs/guide/claude-desktop.md) if you need a remote setup.
 
 ---
 
 ## Option 2: npm package — HTTP (OAuth or PAT)
 
-→ See the [HTTP/OAuth](https://raphaelherbepin.github.io/fireflyiii-mcp/guide/http-oauth) setup guide, or [HTTP/PAT](https://raphaelherbepin.github.io/fireflyiii-mcp/guide/http-pat) for headless callers (gateways, automation) that can't drive a browser-based OAuth flow.
+→ See the [HTTP/OAuth](docs/guide/http-oauth.md) setup guide, or [HTTP/PAT](docs/guide/http-pat.md) for headless callers (gateways, automation) that can't drive a browser-based OAuth flow.
 
 ---
 
 ## Option 3: Docker — HTTP (self-hosted)
 
-→ See [Docker setup guide](https://raphaelherbepin.github.io/fireflyiii-mcp/guide/docker) in the docs.
+→ See [Docker setup guide](docs/guide/docker.md) in the docs.
 
 ---
 
 ## Option 4: Git checkout (development)
 
-→ See [Git checkout guide](https://raphaelherbepin.github.io/fireflyiii-mcp/guide/git-checkout) in the docs.
+→ See [Git checkout guide](docs/guide/git-checkout.md) in the docs.
 
 ---
 
@@ -152,19 +151,19 @@ A normal install (no tag) always resolves to the latest tagged release — `@lat
 
 ## Experimental Autocomplete Prompts
 
-→ See [Autocomplete prompts](https://raphaelherbepin.github.io/fireflyiii-mcp/reference/autocomplete) in the docs.
+→ See [Autocomplete prompts](docs/reference/autocomplete.md) in the docs.
 
 ---
 
 ## Available Tools
 
-→ See the full [tool reference](https://raphaelherbepin.github.io/fireflyiii-mcp/reference/tools) in the docs (207 tools across 20 groups).
+→ See the full [tool reference](docs/reference/tools.md) in the docs (207 tools across 20 groups).
 
 ---
 
 ## Filtering Tools
 
-→ See [Tool filtering](https://raphaelherbepin.github.io/fireflyiii-mcp/reference/filtering) in the docs.
+→ See [Tool filtering](docs/reference/filtering.md) in the docs.
 
 ---
 
